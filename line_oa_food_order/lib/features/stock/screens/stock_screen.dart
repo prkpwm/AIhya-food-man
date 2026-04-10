@@ -8,68 +8,62 @@ class StockScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ingredients = ref.watch(ingredientListProvider);
+    final ingredientsAsync = ref.watch(ingredientListProvider);
     final outOfStock = ref.watch(outOfStockProvider);
     final lowStock = ref.watch(lowStockProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('จัดการสต๊อก',
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+        child: ingredientsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('$e')),
+          data: (ingredients) => CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('จัดการสต๊อก', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+                            ),
+                            child: IconButton(icon: const Icon(Icons.add, color: Color(0xFF1A1A1A)), onPressed: () {}),
                           ),
-                          child: IconButton(
-                            icon: const Icon(Icons.add, color: Color(0xFF1A1A1A)),
-                            onPressed: () {},
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // stat cards
-                    Row(
-                      children: [
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(children: [
                         _StatCard(label: 'ทั้งหมด', value: '${ingredients.length}', color: const Color(0xFF1A1A1A)),
                         const SizedBox(width: 10),
                         _StatCard(label: 'ใกล้หมด', value: '${lowStock.length}', color: const Color(0xFFFF9800)),
                         const SizedBox(width: 10),
                         _StatCard(label: 'หมดแล้ว', value: '${outOfStock.length}', color: const Color(0xFFF44336)),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (_, i) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _IngredientTile(ingredient: ingredients[i]),
+                      ]),
+                      const SizedBox(height: 20),
+                    ],
                   ),
-                  childCount: ingredients.length,
                 ),
               ),
-            ),
-          ],
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (_, i) => Padding(padding: const EdgeInsets.only(bottom: 10), child: _IngredientTile(ingredient: ingredients[i])),
+                    childCount: ingredients.length,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -87,18 +81,12 @@ class _StatCard extends StatelessWidget {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          children: [
-            Text(value,
-                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 2),
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-          ],
-        ),
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(14)),
+        child: Column(children: [
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        ]),
       ),
     );
   }
@@ -112,11 +100,7 @@ class _IngredientTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isOut = !ingredient.isAvailable;
     final isLow = ingredient.isLowStock;
-    final statusColor = isOut
-        ? const Color(0xFFF44336)
-        : isLow
-            ? const Color(0xFFFF9800)
-            : const Color(0xFF7ECEC4);
+    final statusColor = isOut ? const Color(0xFFF44336) : isLow ? const Color(0xFFFF9800) : const Color(0xFF7ECEC4);
 
     return Container(
       decoration: BoxDecoration(
@@ -127,36 +111,20 @@ class _IngredientTile extends ConsumerWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            isOut ? Icons.close_rounded : Icons.check_rounded,
-            color: statusColor,
-            size: 20,
-          ),
+          width: 44, height: 44,
+          decoration: BoxDecoration(color: statusColor.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+          child: Icon(isOut ? Icons.close_rounded : Icons.check_rounded, color: statusColor, size: 20),
         ),
-        title: Text(ingredient.name,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        title: Text(ingredient.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         subtitle: Text(
-          isOut
-              ? 'หมดแล้ว'
-              : isLow
-                  ? 'ใกล้หมด · ${ingredient.quantity} ${ingredient.unit}'
-                  : '${ingredient.quantity} ${ingredient.unit}',
+          isOut ? 'หมดแล้ว' : isLow ? 'ใกล้หมด · ${ingredient.quantity} ${ingredient.unit}' : '${ingredient.quantity} ${ingredient.unit}',
           style: TextStyle(color: statusColor, fontSize: 12),
         ),
         trailing: GestureDetector(
           onTap: () => _showEditDialog(context, ref),
           child: Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(10),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(10)),
             child: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1A1A1A)),
           ),
         ),
@@ -170,16 +138,14 @@ class _IngredientTile extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => Padding(
         padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('แก้ไข ${ingredient.name}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('แก้ไข ${ingredient.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextField(
               controller: ctrl,
@@ -196,14 +162,7 @@ class _IngredientTile extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: () {
                   final newQty = double.tryParse(ctrl.text) ?? ingredient.quantity;
-                  final list = ref.read(ingredientListProvider);
-                  ref.read(ingredientListProvider.notifier).state = list
-                      .map((i) => i.id == ingredient.id
-                          ? IngredientModel(
-                              id: i.id, name: i.name, quantity: newQty,
-                              unit: i.unit, lowStockThreshold: i.lowStockThreshold)
-                          : i)
-                      .toList();
+                  ref.read(ingredientListProvider.notifier).updateQuantity(ingredient.id, newQty);
                   Navigator.pop(context);
                 },
                 child: const Text('บันทึก'),

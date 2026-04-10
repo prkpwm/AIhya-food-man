@@ -103,7 +103,7 @@ class _MenuFlexTabState extends ConsumerState<_MenuFlexTab> {
 
   @override
   Widget build(BuildContext context) {
-    final menus = ref.watch(menuListProvider);
+    final menus = ref.watch(menuListProvider).valueOrNull ?? [];
 
     final json = _selected != null
         ? FlexMessageGenerator.toJsonString(
@@ -172,7 +172,7 @@ class _OrderFlexTabState extends ConsumerState<_OrderFlexTab> {
 
   @override
   Widget build(BuildContext context) {
-    final orders = ref.watch(orderListProvider);
+    final orders = ref.watch(orderListProvider).valueOrNull ?? [];
 
     Map<String, dynamic>? flex;
     if (_selected != null) {
@@ -228,14 +228,14 @@ class _SummaryFlexTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orders = ref.watch(orderListProvider);
+    final orders = ref.watch(orderListProvider).valueOrNull ?? [];
     final completed = orders.where((o) => o.status == OrderStatus.completed).toList();
     final revenue = completed.fold(0.0, (s, o) => s + o.totalPrice);
 
     final menuCount = <String, int>{};
     for (final o in completed) {
       for (final item in o.items) {
-        menuCount[item.menuName] = (menuCount[item.menuName] ?? 0) + item.quantity;
+        menuCount[item.menuName] = (menuCount[item.menuName] ?? 0) + item.quantity as int;
       }
     }
     final sorted = Map.fromEntries(
