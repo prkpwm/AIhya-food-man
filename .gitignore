@@ -1,0 +1,22 @@
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.iml
+*.suo
+*.user
+
+# ─── Node / API ──────────────────────────────────────────────────────────────
+line_oa_api/node_modules/
+line_oa_api/dist/
+line_oa_api/.env
+
+# ─── Flutter ─────────────────────────────────────────────────────────────────
+line_oa_food_order/.dart_tool/
+line_oa_food_order/build/
+line_oa_food_order/.flutter-plugins
+line_oa_food_order/.flutter-plugins-dependencies
