@@ -15,6 +15,7 @@ const app = express();
 
 app.use(cors());
 app.use('/images', express.static('public/images'));
+app.use('/images/menus', express.static('public/images/menus'));
 
 // increase body limit for base64 image uploads
 app.use('/webhook', express.raw({ type: 'application/json' }));
