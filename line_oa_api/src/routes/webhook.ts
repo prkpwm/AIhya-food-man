@@ -3,7 +3,7 @@ import * as line from '@line/bot-sdk';
 import { env } from '../config/env';
 import * as orderService from '../services/order.service';
 import * as menuService from '../services/menu.service';
-import * as lineService from '../services/line.service';
+import { fuzzyFind } from '../utils/fuzzy';
 
 const router = Router();
 
@@ -70,14 +70,11 @@ async function handleTextMessage(
 
   // ── สั่ง [ชื่อเมนู] ───────────────────────────────────────────────────────
   if (text.startsWith('สั่ง ')) {
-    const menuName = text.slice(4).trim(); // "สั่ง " = 4 chars
+    const menuName = text.slice(4).trim();
     const menus = menuService.getMenusByMerchant(merchantId);
 
-    // partial search — case insensitive
-    const menu = menus.find((m) =>
-      m.name.toLowerCase().includes(menuName.toLowerCase()) ||
-      menuName.toLowerCase().includes(m.name.toLowerCase())
-    );
+    // fuzzy search — tolerates typos up to 3 edits
+    const menu = fuzzyFind(menuName, menus, (m) => m.name, 3);
 
     if (!menu) {
       const available = menus.filter((m) => m.isAvailable).map((m) => m.name).slice(0, 5).join(', ');
