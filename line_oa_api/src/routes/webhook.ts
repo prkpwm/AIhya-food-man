@@ -70,16 +70,22 @@ async function handleTextMessage(
 
   // ── สั่ง [ชื่อเมนู] ───────────────────────────────────────────────────────
   if (text.startsWith('สั่ง ')) {
-    const menuName = text.slice(3).trim();
+    const menuName = text.slice(4).trim(); // "สั่ง " = 4 chars
     const menus = menuService.getMenusByMerchant(merchantId);
-    const menu = menus.find((m) => m.name === menuName);
+
+    // partial search — case insensitive
+    const menu = menus.find((m) =>
+      m.name.toLowerCase().includes(menuName.toLowerCase()) ||
+      menuName.toLowerCase().includes(m.name.toLowerCase())
+    );
 
     if (!menu) {
-      await reply(replyToken, [{ type: 'text', text: `ไม่พบเมนู "${menuName}"\nพิมพ์ "เมนู" เพื่อดูรายการ` }]);
+      const available = menus.filter((m) => m.isAvailable).map((m) => m.name).slice(0, 5).join(', ');
+      await reply(replyToken, [{ type: 'text', text: `ไม่พบเมนู "${menuName}"\n\nเมนูที่มี: ${available}\n\nพิมพ์ "เมนู" เพื่อดูทั้งหมด` }]);
       return;
     }
     if (!menu.isAvailable) {
-      await reply(replyToken, [{ type: 'text', text: `ขออภัย "${menuName}" หมดชั่วคราว` }]);
+      await reply(replyToken, [{ type: 'text', text: `ขออภัย "${menu.name}" หมดชั่วคราว` }]);
       return;
     }
 
