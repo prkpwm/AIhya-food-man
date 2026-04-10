@@ -204,31 +204,34 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                     // ── preview ──────────────────────────────────────────────
                     const Text('Preview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 10),
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: AspectRatio(
-                          aspectRatio: 2500 / 843,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              // bg
-                              _imageBytes != null
-                                  ? Image.memory(_imageBytes!, fit: BoxFit.cover)
-                                  : Container(
-                                      color: const Color(0xFF2C2C2C),
-                                      child: const Center(
-                                        child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                          Icon(Icons.add_photo_alternate_outlined, color: Colors.white38, size: 28),
-                                          SizedBox(height: 6),
-                                          Text('แตะเพื่อเลือกรูป background', style: TextStyle(color: Colors.white38, fontSize: 11)),
-                                        ]),
+                    // scrollable large preview
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: SizedBox(
+                            width: 500,
+                            height: 500 * 843 / 2500,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                _imageBytes != null
+                                    ? Image.memory(_imageBytes!, fit: BoxFit.cover)
+                                    : Container(
+                                        color: const Color(0xFF2C2C2C),
+                                        child: const Center(
+                                          child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                            Icon(Icons.add_photo_alternate_outlined, color: Colors.white38, size: 32),
+                                            SizedBox(height: 6),
+                                            Text('แตะเพื่อเลือกรูป background', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                                          ]),
+                                        ),
                                       ),
-                                    ),
-                              // button overlay (fixed, not editable)
-                              _TemplateOverlay(template: _selected),
-                            ],
+                                _TemplateOverlay(template: _selected),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -286,15 +289,15 @@ class _TemplateOverlay extends StatelessWidget {
             ),
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: btn.color,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4)],
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 6, offset: const Offset(0, 2))],
                 ),
                 child: Text(
                   btn.label,
-                  style: TextStyle(color: btn.textColor, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: btn.textColor, fontSize: 13, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
