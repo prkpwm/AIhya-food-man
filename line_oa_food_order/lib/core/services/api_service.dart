@@ -29,6 +29,25 @@ class ApiService {
     return res.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> updateMenu({
+    required String id,
+    required Map<String, String> data,
+    Uint8List? imageBytes,
+    String imageName = 'menu.jpg',
+  }) async {
+    final form = FormData.fromMap({
+      ...data,
+      if (imageBytes != null)
+        'image': MultipartFile.fromBytes(
+          imageBytes,
+          filename: imageName,
+          contentType: DioMediaType.parse(imageName.endsWith('.png') ? 'image/png' : 'image/jpeg'),
+        ),
+    });
+    final res = await _dio.put('/menus/$id', data: form);
+    return res.data as Map<String, dynamic>;
+  }
+
   // ─── Menus ──────────────────────────────────────────────────────────────────
 
   Future<List<dynamic>> getMenus({String merchantId = 'merchant-001'}) async {

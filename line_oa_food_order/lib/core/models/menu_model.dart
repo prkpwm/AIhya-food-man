@@ -1,5 +1,6 @@
 class MenuModel {
   final String id;
+  final String merchantId;
   final String name;
   final String description;
   final double price;
@@ -12,6 +13,7 @@ class MenuModel {
 
   const MenuModel({
     required this.id,
+    required this.merchantId,
     required this.name,
     required this.description,
     required this.price,
@@ -25,6 +27,7 @@ class MenuModel {
 
   factory MenuModel.fromJson(Map<String, dynamic> json) => MenuModel(
         id: json['id'] as String,
+        merchantId: json['merchantId'] as String? ?? 'merchant-001',
         name: json['name'] as String,
         description: json['description'] as String,
         price: (json['price'] as num).toDouble(),
@@ -38,6 +41,7 @@ class MenuModel {
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'merchantId': merchantId,
         'name': name,
         'description': description,
         'price': price,

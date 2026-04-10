@@ -38,6 +38,7 @@ final mockIngredients = <IngredientModel>[
 final mockMenus = <MenuModel>[
   MenuModel(
     id: 'menu-001',
+    merchantId: 'merchant-001',
     name: 'กระเพราหมูสับ',
     description: 'กระเพราหมูสับผัดเผ็ด หอมกระเพรา เสิร์ฟพร้อมข้าวสวย',
     price: 60,
@@ -50,6 +51,7 @@ final mockMenus = <MenuModel>[
   ),
   MenuModel(
     id: 'menu-002',
+    merchantId: 'merchant-001',
     name: 'กระเพราไก่',
     description: 'กระเพราไก่ผัดเผ็ด เสิร์ฟพร้อมข้าวสวยและไข่ดาว',
     price: 60,
@@ -62,6 +64,7 @@ final mockMenus = <MenuModel>[
   ),
   MenuModel(
     id: 'menu-003',
+    merchantId: 'merchant-001',
     name: 'กระเพรากุ้ง',
     description: 'กระเพรากุ้งสด',
     price: 80,
@@ -74,6 +77,7 @@ final mockMenus = <MenuModel>[
   ),
   MenuModel(
     id: 'menu-004',
+    merchantId: 'merchant-001',
     name: 'ผัดไทยกุ้งสด',
     description: 'ผัดไทยกุ้งสดใส่ถั่วงอก มะนาว ถั่วลิสง',
     price: 90,
@@ -86,6 +90,7 @@ final mockMenus = <MenuModel>[
   ),
   MenuModel(
     id: 'menu-005',
+    merchantId: 'merchant-001',
     name: 'ต้มยำกุ้ง',
     description: 'ต้มยำกุ้งสด รสเปรี้ยวเผ็ด หอมตะไคร้ ใบมะกรูด',
     price: 120,
@@ -98,6 +103,7 @@ final mockMenus = <MenuModel>[
   ),
   MenuModel(
     id: 'menu-006',
+    merchantId: 'merchant-001',
     name: 'แกงเขียวหวานไก่',
     description: 'แกงเขียวหวานไก่ กะทิสด มะเขือ ใบโหระพา',
     price: 80,
@@ -110,6 +116,7 @@ final mockMenus = <MenuModel>[
   ),
   MenuModel(
     id: 'menu-007',
+    merchantId: 'merchant-001',
     name: 'ส้มตำไทย',
     description: 'ส้มตำมะละกอสด รสเปรี้ยวเผ็ด มะนาว น้ำปลา พริก ถั่วลิสง',
     price: 50,
@@ -122,6 +129,7 @@ final mockMenus = <MenuModel>[
   ),
   MenuModel(
     id: 'menu-008',
+    merchantId: 'merchant-001',
     name: 'ราดหน้าหมูแดงหมูกรอบ',
     description: 'ราดหน้าเส้นใหญ่ หมูแดง หมูกรอบ',
     price: 75,
@@ -134,6 +142,7 @@ final mockMenus = <MenuModel>[
   ),
   MenuModel(
     id: 'menu-009',
+    merchantId: 'merchant-001',
     name: 'หมูปิ้ง',
     description: 'หมูปิ้งหมักเครื่องเทศ หอมหวาน ย่างไฟ เสิร์ฟพร้อมข้าวเหนียว',
     price: 40,
@@ -146,6 +155,7 @@ final mockMenus = <MenuModel>[
   ),
   MenuModel(
     id: 'menu-010',
+    merchantId: 'merchant-001',
     name: 'ข้าวเหนียวมะม่วง',
     description: 'ข้าวเหนียวมะม่วงสุก กะทิสด หอมหวาน',
     price: 65,

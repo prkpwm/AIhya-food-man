@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:line_oa_food_order/core/models/menu_model.dart';
 import 'package:line_oa_food_order/core/services/api_service.dart';
+import 'package:line_oa_food_order/core/services/flex_message_generator.dart';
 import 'package:line_oa_food_order/features/menu/providers/menu_provider.dart';
 
 class MenuListScreen extends ConsumerStatefulWidget {
@@ -188,7 +189,7 @@ class _MenuListScreenState extends ConsumerState<MenuListScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => _MenuDetailSheet(menu: menu),
+      builder: (_) => _MenuDetailSheet(menu: menu, ref: ref),
     );
   }
 
@@ -301,7 +302,8 @@ class _MenuCard extends StatelessWidget {
 
 class _MenuDetailSheet extends ConsumerStatefulWidget {
   final MenuModel menu;
-  const _MenuDetailSheet({required this.menu});
+  final WidgetRef ref;
+  const _MenuDetailSheet({required this.menu, required this.ref});
 
   @override
   ConsumerState<_MenuDetailSheet> createState() => _MenuDetailSheetState();
@@ -332,6 +334,24 @@ class _MenuDetailSheetState extends ConsumerState<_MenuDetailSheet> {
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Expanded(child: Text(m.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
                 Text('฿${m.price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFFF6B00))),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+                      builder: (_) => _EditMenuSheet(menu: m, ref: widget.ref),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1A1A1A)),
+                  ),
+                ),
               ]),
               const SizedBox(height: 4),
               Text(m.description, style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 13)),
@@ -390,6 +410,178 @@ class _MenuDetailSheetState extends ConsumerState<_MenuDetailSheet> {
             ]),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Edit Menu Sheet ──────────────────────────────────────────────────────────
+
+class _EditMenuSheet extends StatefulWidget {
+  final MenuModel menu;
+  final WidgetRef ref;
+  const _EditMenuSheet({required this.menu, required this.ref});
+
+  @override
+  State<_EditMenuSheet> createState() => _EditMenuSheetState();
+}
+
+class _EditMenuSheetState extends State<_EditMenuSheet> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _priceCtrl;
+  late final TextEditingController _descCtrl;
+  late String _category;
+  late bool _available;
+  bool _loading = false;
+  Uint8List? _imageBytes;
+  String _imageName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.menu;
+    _nameCtrl = TextEditingController(text: m.name);
+    _priceCtrl = TextEditingController(text: m.price.toStringAsFixed(0));
+    _descCtrl = TextEditingController(text: m.description);
+    _category = m.category;
+    _available = m.isAvailable;
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _priceCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final file = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    setState(() { _imageBytes = bytes; _imageName = file.name; });
+  }
+
+  Future<void> _save() async {
+    if (_nameCtrl.text.isEmpty || _priceCtrl.text.isEmpty) return;
+    setState(() => _loading = true);
+    try {
+      final api = ApiService();
+      final res = await api.updateMenu(
+        id: widget.menu.id,
+        data: {
+          'merchantId': widget.menu.merchantId,
+          'name': _nameCtrl.text.trim(),
+          'price': _priceCtrl.text.trim(),
+          'description': _descCtrl.text.trim(),
+          'category': _category,
+          'shopType': widget.menu.shopType.name,
+          'maxSpiceLevel': widget.menu.maxSpiceLevel.toString(),
+          'ingredientIds': '[]',
+          'isAvailable': _available.toString(),
+          if (_imageBytes == null && widget.menu.imageUrl != null)
+            'imageUrl': widget.menu.imageUrl!,
+        },
+        imageBytes: _imageBytes,
+        imageName: _imageName.isNotEmpty ? _imageName : 'menu.jpg',
+      );
+
+      // build updated model from response and broadcast flex to LINE
+      final updated = MenuModel.fromJson(res['data'] as Map<String, dynamic>);
+      final flex = FlexMessageGenerator.menuCard(updated);
+      await api.broadcastFlex(FlexMessageGenerator.toJsonString(flex));
+
+      widget.ref.invalidate(menuListProvider);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('อัปเดตเมนูและส่ง Flex แล้ว'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('เกิดข้อผิดพลาด: $e'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final existingImage = widget.menu.imageUrl;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('แก้ไขเมนู', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                width: double.infinity, height: 120,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: _imageBytes != null
+                    ? ClipRRect(borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(_imageBytes!, fit: BoxFit.cover))
+                    : existingImage != null
+                        ? ClipRRect(borderRadius: BorderRadius.circular(12),
+                            child: Image.network(existingImage, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Color(0xFF9E9E9E))))
+                        : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(Icons.add_photo_alternate_outlined, size: 32, color: Color(0xFF9E9E9E)),
+                            SizedBox(height: 6),
+                            Text('เปลี่ยนรูปเมนู', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
+                          ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _Field(ctrl: _nameCtrl, label: 'ชื่อเมนู'),
+            const SizedBox(height: 12),
+            _Field(ctrl: _priceCtrl, label: 'ราคา (บาท)', type: TextInputType.number),
+            const SizedBox(height: 12),
+            _Field(ctrl: _descCtrl, label: 'คำอธิบาย'),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _category,
+              decoration: InputDecoration(
+                labelText: 'หมวดหมู่',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true, fillColor: const Color(0xFFF5F5F5),
+              ),
+              items: ['กระเพรา', 'ผัดไทย', 'ต้มยำ', 'แกง', 'ยำ', 'ราดหน้า', 'ปิ้งย่าง', 'ของหวาน', 'อื่นๆ']
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+              onChanged: (v) => setState(() => _category = v ?? _category),
+            ),
+            const SizedBox(height: 12),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text('พร้อมขาย', style: TextStyle(fontWeight: FontWeight.w600)),
+              Switch(value: _available, onChanged: (v) => setState(() => _available = v),
+                  activeColor: const Color(0xFF1A1A1A)),
+            ]),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _save,
+                child: _loading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('บันทึก & ส่ง Flex'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
