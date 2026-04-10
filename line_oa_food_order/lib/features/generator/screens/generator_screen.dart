@@ -404,8 +404,8 @@ class _FlexLayoutState extends State<_FlexLayout> {
             const SizedBox(height: 10),
 
             // ── preview / edit / json ─────────────────────────────────────────
-            if (_mode == 0 && widget.flexData != null)
-              _FlexPreview(flexData: widget.flexData!)
+            if (_mode == 0)
+              _FlexPreview(flexData: _editedFlex)
             else if (_mode == 1)
               _FlexEditor(
                 flexData: _editedFlex,
@@ -592,19 +592,46 @@ class _FlexEditorState extends State<_FlexEditor> {
   }
 }
 
-class _EditRow extends StatelessWidget {
+class _EditRow extends StatefulWidget {
   final String label;
   final String value;
   final ValueChanged<String> onChanged;
   const _EditRow({required this.label, required this.value, required this.onChanged});
 
   @override
+  State<_EditRow> createState() => _EditRowState();
+}
+
+class _EditRowState extends State<_EditRow> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.value);
+  }
+
+  @override
+  void didUpdateWidget(_EditRow old) {
+    super.didUpdateWidget(old);
+    if (old.value != widget.value && _ctrl.text != widget.value) {
+      _ctrl.text = widget.value;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return TextField(
-      controller: TextEditingController(text: value),
-      onChanged: onChanged,
+      controller: _ctrl,
+      onChanged: widget.onChanged,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: widget.label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         filled: true, fillColor: const Color(0xFFF5F5F5),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
