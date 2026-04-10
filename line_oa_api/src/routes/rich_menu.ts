@@ -22,14 +22,27 @@ router.post('/deploy/customer', async (req: Request, res: Response, next: NextFu
       imageType: 'image/jpeg' | 'image/png';
     };
 
-    if (!shopName || !imageBase64) {
-      res.status(400).json({ code: '400', en: 'shopName and imageBase64 required', th: 'ข้อมูลไม่ครบ' });
+    if (!shopName) {
+      res.status(400).json({ code: '400', en: 'shopName required', th: 'ข้อมูลไม่ครบ' });
       return;
     }
 
     const menuRequest = richMenuService.buildCustomerMenu(shopName);
+
+    // if no image provided, create menu without image (LINE will use default)
+    if (!imageBase64) {
+      const client = new (await import('@line/bot-sdk')).messagingApi.MessagingApiClient({
+        channelAccessToken: (await import('../config/env')).env.line.channelAccessToken,
+      });
+      const { richMenuId } = await client.createRichMenu(menuRequest);
+      await client.setDefaultRichMenu(richMenuId);
+      res.json({ success: true, data: { richMenuId } });
+      return;
+    }
+
     const imageBuffer = Buffer.from(imageBase64, 'base64');
-    const richMenuId = await richMenuService.createAndSetDefault(menuRequest, imageBuffer, imageType ?? 'image/png');
+    const type = imageType ?? 'image/png';
+    const richMenuId = await richMenuService.createAndSetDefault(menuRequest, imageBuffer, type);
 
     res.json({ success: true, data: { richMenuId } });
   } catch (err) {
@@ -46,14 +59,26 @@ router.post('/deploy/merchant', async (req: Request, res: Response, next: NextFu
       imageType: 'image/jpeg' | 'image/png';
     };
 
-    if (!shopName || !imageBase64) {
-      res.status(400).json({ code: '400', en: 'shopName and imageBase64 required', th: 'ข้อมูลไม่ครบ' });
+    if (!shopName) {
+      res.status(400).json({ code: '400', en: 'shopName required', th: 'ข้อมูลไม่ครบ' });
       return;
     }
 
     const menuRequest = richMenuService.buildMerchantMenu(shopName);
+
+    if (!imageBase64) {
+      const client = new (await import('@line/bot-sdk')).messagingApi.MessagingApiClient({
+        channelAccessToken: (await import('../config/env')).env.line.channelAccessToken,
+      });
+      const { richMenuId } = await client.createRichMenu(menuRequest);
+      await client.setDefaultRichMenu(richMenuId);
+      res.json({ success: true, data: { richMenuId } });
+      return;
+    }
+
     const imageBuffer = Buffer.from(imageBase64, 'base64');
-    const richMenuId = await richMenuService.createAndSetDefault(menuRequest, imageBuffer, imageType ?? 'image/png');
+    const type = imageType ?? 'image/png';
+    const richMenuId = await richMenuService.createAndSetDefault(menuRequest, imageBuffer, type);
 
     res.json({ success: true, data: { richMenuId } });
   } catch (err) {

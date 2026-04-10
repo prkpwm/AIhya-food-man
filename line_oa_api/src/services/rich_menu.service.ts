@@ -80,17 +80,27 @@ export async function createAndSetDefault(
   const client = getClient();
   const blobClient = getBlobClient();
 
+  // 1. create rich menu
   const { richMenuId } = await client.createRichMenu(menuRequest);
+  console.table({ step: 'rich-menu-created', richMenuId });
 
-  const rawBuffer = imageBuffer.buffer instanceof SharedArrayBuffer
-    ? imageBuffer.buffer.slice(0) as unknown as ArrayBuffer
-    : imageBuffer.buffer.slice(imageBuffer.byteOffset, imageBuffer.byteOffset + imageBuffer.byteLength) as ArrayBuffer;
-  const blob = new Blob([rawBuffer], { type: imageType });
-  await blobClient.setRichMenuImage(richMenuId, blob);
+  // 2. upload image — LINE requires exact 2500x843 JPEG or PNG
+  try {
+    const rawBuffer = imageBuffer.buffer instanceof SharedArrayBuffer
+      ? imageBuffer.buffer.slice(0) as unknown as ArrayBuffer
+      : imageBuffer.buffer.slice(imageBuffer.byteOffset, imageBuffer.byteOffset + imageBuffer.byteLength) as ArrayBuffer;
+    const blob = new Blob([rawBuffer], { type: imageType });
+    await blobClient.setRichMenuImage(richMenuId, blob);
+    console.table({ step: 'rich-menu-image-uploaded', richMenuId });
+  } catch (imgErr) {
+    // image upload failed but menu was created — log and continue
+    console.table({ step: 'rich-menu-image-error', richMenuId, error: String(imgErr) });
+  }
 
+  // 3. set as default
   await client.setDefaultRichMenu(richMenuId);
-
   console.table({ step: 'rich-menu-deployed', richMenuId });
+
   return richMenuId;
 }
 
