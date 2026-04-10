@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:line_oa_food_order/core/models/menu_model.dart';
 import 'package:line_oa_food_order/core/models/order_model.dart';
+import 'package:line_oa_food_order/core/services/api_service.dart';
 import 'package:line_oa_food_order/core/services/flex_message_generator.dart';
 import 'package:line_oa_food_order/features/generator/screens/rich_menu_screen.dart';
 import 'package:line_oa_food_order/features/menu/providers/menu_provider.dart';
@@ -105,10 +106,10 @@ class _MenuFlexTabState extends ConsumerState<_MenuFlexTab> {
   Widget build(BuildContext context) {
     final menus = ref.watch(menuListProvider).valueOrNull ?? [];
 
-    final json = _selected != null
-        ? FlexMessageGenerator.toJsonString(
-            FlexMessageGenerator.menuCard(_selected!, quantity: _qty))
+    final flexData = _selected != null
+        ? FlexMessageGenerator.menuCard(_selected!, quantity: _qty)
         : null;
+    final json = flexData != null ? FlexMessageGenerator.toJsonString(flexData) : null;
 
     return _FlexLayout(
       controls: Column(
@@ -153,11 +154,10 @@ class _MenuFlexTabState extends ConsumerState<_MenuFlexTab> {
         ],
       ),
       json: json,
+      flexData: flexData,
     );
   }
 }
-
-// ─── Order Flex Tab ───────────────────────────────────────────────────────────
 
 class _OrderFlexTab extends ConsumerStatefulWidget {
   const _OrderFlexTab();
@@ -217,6 +217,7 @@ class _OrderFlexTabState extends ConsumerState<_OrderFlexTab> {
         ],
       ),
       json: json,
+      flexData: flex,
     );
   }
 }
@@ -260,17 +261,50 @@ class _SummaryFlexTab extends ConsumerWidget {
         ],
       ),
       json: json,
+      flexData: flex,
     );
   }
 }
 
 // ─── Shared Layout ────────────────────────────────────────────────────────────
 
-class _FlexLayout extends StatelessWidget {
+class _FlexLayout extends StatefulWidget {
   final Widget controls;
   final String? json;
+  final Map<String, dynamic>? flexData;
 
-  const _FlexLayout({required this.controls, this.json});
+  const _FlexLayout({required this.controls, this.json, this.flexData});
+
+  @override
+  State<_FlexLayout> createState() => _FlexLayoutState();
+}
+
+class _FlexLayoutState extends State<_FlexLayout> {
+  bool _showPreview = true;
+  bool _launching = false;
+
+  Future<void> _launch() async {
+    if (widget.json == null) return;
+    setState(() => _launching = true);
+    try {
+      await ApiService().broadcastFlex(widget.json!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('ส่ง Flex Message แล้ว'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('เกิดข้อผิดพลาด: $e'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _launching = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -279,6 +313,7 @@ class _FlexLayout extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // controls card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -287,77 +322,89 @@ class _FlexLayout extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
             ),
-            child: controls,
+            child: widget.controls,
           ),
           const SizedBox(height: 16),
-          if (json != null) ...[
+
+          if (widget.json != null) ...[
+            // ── toolbar ──────────────────────────────────────────────────────
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Flex Message JSON',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                // toggle preview / json
+                Container(
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                  child: Row(children: [
+                    _ToggleBtn(label: 'Preview', selected: _showPreview, onTap: () => setState(() => _showPreview = true)),
+                    _ToggleBtn(label: 'JSON', selected: !_showPreview, onTap: () => setState(() => _showPreview = false)),
+                  ]),
+                ),
+                const Spacer(),
+                // copy
                 GestureDetector(
                   onTap: () {
-                    Clipboard.setData(ClipboardData(text: json!));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('คัดลอก JSON แล้ว'),
-                        behavior: SnackBarBehavior.floating,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    Clipboard.setData(ClipboardData(text: widget.json!));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('คัดลอก JSON แล้ว'),
+                      behavior: SnackBarBehavior.floating,
+                      duration: Duration(seconds: 2),
+                    ));
                   },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                    child: const Row(children: [
+                      Icon(Icons.copy, size: 14, color: Color(0xFF1A1A1A)),
+                      SizedBox(width: 4),
+                      Text('คัดลอก', style: TextStyle(fontSize: 12)),
+                    ]),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // launch
+                GestureDetector(
+                  onTap: _launching ? null : _launch,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
-                      borderRadius: BorderRadius.circular(50),
+                      color: const Color(0xFF06C755),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.copy, color: Colors.white, size: 14),
-                        SizedBox(width: 6),
-                        Text('คัดลอก', style: TextStyle(color: Colors.white, fontSize: 13)),
-                      ],
-                    ),
+                    child: _launching
+                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Row(children: [
+                            Icon(Icons.send, size: 14, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text('Launch', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
+                          ]),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: SelectableText(
-                json!,
-                style: const TextStyle(
-                  color: Color(0xFF7ECEC4),
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  height: 1.6,
+
+            // ── preview or json ───────────────────────────────────────────────
+            if (_showPreview && widget.flexData != null)
+              _FlexPreview(flexData: widget.flexData!)
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(16)),
+                child: SelectableText(
+                  widget.json!,
+                  style: const TextStyle(color: Color(0xFF7ECEC4), fontFamily: 'monospace', fontSize: 11, height: 1.6),
                 ),
               ),
-            ),
           ] else
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.code, size: 48, color: Color(0xFFE0E0E0)),
-                  SizedBox(height: 12),
-                  Text('เลือกข้อมูลเพื่อ generate JSON',
-                      style: TextStyle(color: Color(0xFF9E9E9E))),
-                ],
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              child: const Column(children: [
+                Icon(Icons.code, size: 48, color: Color(0xFFE0E0E0)),
+                SizedBox(height: 12),
+                Text('เลือกข้อมูลเพื่อ generate JSON', style: TextStyle(color: Color(0xFF9E9E9E))),
+              ]),
             ),
         ],
       ),
@@ -365,7 +412,147 @@ class _FlexLayout extends StatelessWidget {
   }
 }
 
+// ─── Flex Preview ─────────────────────────────────────────────────────────────
+
+class _FlexPreview extends StatelessWidget {
+  final Map<String, dynamic> flexData;
+  const _FlexPreview({required this.flexData});
+
+  @override
+  Widget build(BuildContext context) {
+    final contents = flexData['contents'] as Map<String, dynamic>?;
+    final hero = contents?['hero'] as Map<String, dynamic>?;
+    final body = contents?['body'] as Map<String, dynamic>?;
+    final footer = contents?['footer'] as Map<String, dynamic>?;
+    final bodyContents = body?['contents'] as List<dynamic>? ?? [];
+    final footerContents = footer?['contents'] as List<dynamic>? ?? [];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4))],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // hero image
+          if (hero != null && hero['url'] != null)
+            AspectRatio(
+              aspectRatio: 20 / 13,
+              child: Image.network(hero['url'] as String, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(color: const Color(0xFFF0F0F0),
+                      child: const Center(child: Icon(Icons.image, size: 40, color: Color(0xFFE0E0E0))))),
+            ),
+          // body
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: bodyContents.map((item) => _renderItem(item as Map<String, dynamic>)).toList(),
+            ),
+          ),
+          // footer buttons
+          if (footerContents.isNotEmpty) ...[
+            const Divider(height: 1, color: Color(0xFFF0F0F0)),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: footerContents.map((btn) {
+                  final b = btn as Map<String, dynamic>;
+                  final isPrimary = b['style'] == 'primary';
+                  final label = (b['action'] as Map<String, dynamic>?)?['label'] as String? ?? '';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isPrimary
+                              ? Color(int.parse('0xFF${(b['color'] as String? ?? '#FF6B00').replaceFirst('#', '')}'))
+                              : const Color(0xFFF5F5F5),
+                          foregroundColor: isPrimary ? Colors.white : const Color(0xFF1A1A1A),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: Text(label),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _renderItem(Map<String, dynamic> item) {
+    final type = item['type'] as String?;
+    if (type == 'text') {
+      final text = item['text'] as String? ?? '';
+      final weight = item['weight'] as String?;
+      final size = item['size'] as String?;
+      final color = item['color'] as String?;
+      final wrap = item['wrap'] as bool? ?? false;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Text(
+          text,
+          maxLines: wrap ? null : 1,
+          overflow: wrap ? null : TextOverflow.ellipsis,
+          style: TextStyle(
+            fontWeight: weight == 'bold' ? FontWeight.bold : FontWeight.normal,
+            fontSize: size == 'xl' ? 18 : size == 'lg' ? 16 : size == 'sm' ? 12 : 14,
+            color: color != null ? Color(int.parse('0xFF${color.replaceFirst('#', '')}')) : const Color(0xFF1A1A1A),
+          ),
+        ),
+      );
+    }
+    if (type == 'separator') return const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(height: 1, color: Color(0xFFF0F0F0)));
+    if (type == 'box') {
+      final children = (item['contents'] as List<dynamic>? ?? []).map((c) => _renderItem(c as Map<String, dynamic>)).toList();
+      final layout = item['layout'] as String?;
+      if (layout == 'baseline' || layout == 'horizontal') {
+        return Row(children: children.map((c) => Expanded(child: c)).toList());
+      }
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+    }
+    return const SizedBox.shrink();
+  }
+}
+
 // ─── Small widgets ────────────────────────────────────────────────────────────
+
+class _ToggleBtn extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _ToggleBtn({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF1A1A1A) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+              color: selected ? Colors.white : const Color(0xFF9E9E9E),
+            )),
+      ),
+    );
+  }
+}
 
 class _QtyButton extends StatelessWidget {
   final VoidCallback onTap;

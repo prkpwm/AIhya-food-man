@@ -7,6 +7,7 @@ import ordersRouter from './routes/orders';
 import menusRouter from './routes/menus';
 import stockRouter from './routes/stock';
 import richMenuRouter from './routes/rich_menu';
+import broadcastRouter from './routes/broadcast';
 import { seedData } from './data/seed';
 
 const app = express();
@@ -44,6 +45,7 @@ app.use('/orders', ordersRouter);
 app.use('/menus', menusRouter);
 app.use('/stock', stockRouter);
 app.use('/rich-menu', richMenuRouter);
+app.use('/broadcast', broadcastRouter);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 
