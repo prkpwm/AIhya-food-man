@@ -280,14 +280,41 @@ class _FlexLayout extends StatefulWidget {
 }
 
 class _FlexLayoutState extends State<_FlexLayout> {
-  bool _showPreview = true;
+  // 0=Preview 1=Edit 2=JSON
+  int _mode = 0;
   bool _launching = false;
+  late Map<String, dynamic> _editedFlex;
+
+  @override
+  void initState() {
+    super.initState();
+    _editedFlex = _deepCopy(widget.flexData ?? {});
+  }
+
+  @override
+  void didUpdateWidget(_FlexLayout old) {
+    super.didUpdateWidget(old);
+    if (old.flexData != widget.flexData) {
+      _editedFlex = _deepCopy(widget.flexData ?? {});
+    }
+  }
+
+  Map<String, dynamic> _deepCopy(Map<String, dynamic> m) =>
+      Map<String, dynamic>.from(m.map((k, v) {
+        if (v is Map<String, dynamic>) return MapEntry(k, _deepCopy(v));
+        if (v is List) return MapEntry(k, v.map((e) => e is Map<String, dynamic> ? _deepCopy(e) : e).toList());
+        return MapEntry(k, v);
+      }));
+
+  String get _currentJson => _mode == 1
+      ? FlexMessageGenerator.toJsonString(_editedFlex)
+      : widget.json ?? '';
 
   Future<void> _launch() async {
     if (widget.json == null) return;
     setState(() => _launching = true);
     try {
-      await ApiService().broadcastFlex(widget.json!);
+      await ApiService().broadcastFlex(_currentJson);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('ส่ง Flex Message แล้ว'),
@@ -313,7 +340,6 @@ class _FlexLayoutState extends State<_FlexLayout> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // controls card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -330,19 +356,18 @@ class _FlexLayoutState extends State<_FlexLayout> {
             // ── toolbar ──────────────────────────────────────────────────────
             Row(
               children: [
-                // toggle preview / json
                 Container(
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
                   child: Row(children: [
-                    _ToggleBtn(label: 'Preview', selected: _showPreview, onTap: () => setState(() => _showPreview = true)),
-                    _ToggleBtn(label: 'JSON', selected: !_showPreview, onTap: () => setState(() => _showPreview = false)),
+                    _ToggleBtn(label: 'Preview', selected: _mode == 0, onTap: () => setState(() => _mode = 0)),
+                    _ToggleBtn(label: 'Edit', selected: _mode == 1, onTap: () => setState(() => _mode = 1)),
+                    _ToggleBtn(label: 'JSON', selected: _mode == 2, onTap: () => setState(() => _mode = 2)),
                   ]),
                 ),
                 const Spacer(),
-                // copy
                 GestureDetector(
                   onTap: () {
-                    Clipboard.setData(ClipboardData(text: widget.json!));
+                    Clipboard.setData(ClipboardData(text: _currentJson));
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('คัดลอก JSON แล้ว'),
                       behavior: SnackBarBehavior.floating,
@@ -360,15 +385,11 @@ class _FlexLayoutState extends State<_FlexLayout> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // launch
                 GestureDetector(
                   onTap: _launching ? null : _launch,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF06C755),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    decoration: BoxDecoration(color: const Color(0xFF06C755), borderRadius: BorderRadius.circular(10)),
                     child: _launching
                         ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                         : const Row(children: [
@@ -382,16 +403,21 @@ class _FlexLayoutState extends State<_FlexLayout> {
             ),
             const SizedBox(height: 10),
 
-            // ── preview or json ───────────────────────────────────────────────
-            if (_showPreview && widget.flexData != null)
+            // ── preview / edit / json ─────────────────────────────────────────
+            if (_mode == 0 && widget.flexData != null)
               _FlexPreview(flexData: widget.flexData!)
+            else if (_mode == 1)
+              _FlexEditor(
+                flexData: _editedFlex,
+                onChanged: (updated) => setState(() => _editedFlex = updated),
+              )
             else
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(16)),
                 child: SelectableText(
-                  widget.json!,
+                  _currentJson,
                   style: const TextStyle(color: Color(0xFF7ECEC4), fontFamily: 'monospace', fontSize: 11, height: 1.6),
                 ),
               ),
@@ -408,6 +434,183 @@ class _FlexLayoutState extends State<_FlexLayout> {
             ),
         ],
       ),
+    );
+  }
+}
+
+// ─── Flex Editor ─────────────────────────────────────────────────────────────
+
+class _FlexEditor extends StatefulWidget {
+  final Map<String, dynamic> flexData;
+  final ValueChanged<Map<String, dynamic>> onChanged;
+  const _FlexEditor({required this.flexData, required this.onChanged});
+
+  @override
+  State<_FlexEditor> createState() => _FlexEditorState();
+}
+
+class _FlexEditorState extends State<_FlexEditor> {
+  late Map<String, dynamic> _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _data = widget.flexData;
+  }
+
+  List<Map<String, dynamic>> _getBodyContents() {
+    final contents = _data['contents'] as Map<String, dynamic>?;
+    final body = contents?['body'] as Map<String, dynamic>?;
+    return List<Map<String, dynamic>>.from(body?['contents'] as List? ?? []);
+  }
+
+  List<Map<String, dynamic>> _getFooterContents() {
+    final contents = _data['contents'] as Map<String, dynamic>?;
+    final footer = contents?['footer'] as Map<String, dynamic>?;
+    return List<Map<String, dynamic>>.from(footer?['contents'] as List? ?? []);
+  }
+
+  void _updateBodyText(int index, String newText) {
+    final d = Map<String, dynamic>.from(_data);
+    final contents = Map<String, dynamic>.from(d['contents'] as Map<String, dynamic>);
+    final body = Map<String, dynamic>.from(contents['body'] as Map<String, dynamic>);
+    final items = List<dynamic>.from(body['contents'] as List);
+    items[index] = Map<String, dynamic>.from(items[index] as Map<String, dynamic>)..['text'] = newText;
+    body['contents'] = items;
+    contents['body'] = body;
+    d['contents'] = contents;
+    _data = d;
+    widget.onChanged(_data);
+  }
+
+  void _updateButtonLabel(int index, String newLabel) {
+    final d = Map<String, dynamic>.from(_data);
+    final contents = Map<String, dynamic>.from(d['contents'] as Map<String, dynamic>);
+    final footer = Map<String, dynamic>.from(contents['footer'] as Map<String, dynamic>);
+    final items = List<dynamic>.from(footer['contents'] as List);
+    final btn = Map<String, dynamic>.from(items[index] as Map<String, dynamic>);
+    final action = Map<String, dynamic>.from(btn['action'] as Map<String, dynamic>);
+    action['label'] = newLabel;
+    btn['action'] = action;
+    items[index] = btn;
+    footer['contents'] = items;
+    contents['footer'] = footer;
+    d['contents'] = contents;
+    _data = d;
+    widget.onChanged(_data);
+  }
+
+  void _updateButtonColor(int index, String color) {
+    final d = Map<String, dynamic>.from(_data);
+    final contents = Map<String, dynamic>.from(d['contents'] as Map<String, dynamic>);
+    final footer = Map<String, dynamic>.from(contents['footer'] as Map<String, dynamic>);
+    final items = List<dynamic>.from(footer['contents'] as List);
+    final btn = Map<String, dynamic>.from(items[index] as Map<String, dynamic>);
+    btn['color'] = color;
+    items[index] = btn;
+    footer['contents'] = items;
+    contents['footer'] = footer;
+    d['contents'] = contents;
+    _data = d;
+    widget.onChanged(_data);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bodyItems = _getBodyContents();
+    final footerItems = _getFooterContents();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // altText
+          _EditRow(
+            label: 'Alt Text',
+            value: _data['altText'] as String? ?? '',
+            onChanged: (v) {
+              setState(() => _data = {..._data, 'altText': v});
+              widget.onChanged(_data);
+            },
+          ),
+          const Divider(height: 24),
+          const Text('Body', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF9E9E9E))),
+          const SizedBox(height: 8),
+          ...bodyItems.asMap().entries.where((e) => e.value['type'] == 'text').map((e) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _EditRow(
+                  label: 'Text ${e.key + 1}',
+                  value: e.value['text'] as String? ?? '',
+                  onChanged: (v) => setState(() => _updateBodyText(e.key, v)),
+                ),
+              )),
+          if (footerItems.isNotEmpty) ...[
+            const Divider(height: 24),
+            const Text('Buttons', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF9E9E9E))),
+            const SizedBox(height: 8),
+            ...footerItems.asMap().entries.map((e) {
+              final btn = e.value;
+              final label = (btn['action'] as Map<String, dynamic>?)?['label'] as String? ?? '';
+              final color = btn['color'] as String? ?? '#FF6B00';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _EditRow(
+                    label: 'ปุ่ม ${e.key + 1} label',
+                    value: label,
+                    onChanged: (v) => setState(() => _updateButtonLabel(e.key, v)),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    const Text('สี: ', style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
+                    ...['#FF6B00', '#06C755', '#1A1A1A', '#2196F3', '#F44336'].map((c) => GestureDetector(
+                          onTap: () => setState(() => _updateButtonColor(e.key, c)),
+                          child: Container(
+                            width: 24, height: 24,
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: Color(int.parse('0xFF${c.replaceFirst('#', '')}')),
+                              shape: BoxShape.circle,
+                              border: color == c ? Border.all(color: Colors.black, width: 2) : null,
+                            ),
+                          ),
+                        )),
+                  ]),
+                ]),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EditRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+  const _EditRow({required this.label, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: TextEditingController(text: value),
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        filled: true, fillColor: const Color(0xFFF5F5F5),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        isDense: true,
+      ),
+      style: const TextStyle(fontSize: 13),
     );
   }
 }
