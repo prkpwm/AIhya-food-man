@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 
 class ApiService {
   static const String _prod = 'https://aihya-food-man.onrender.com';
-
   static String get baseUrl => _prod;
 
   final Dio _dio = Dio(BaseOptions(
@@ -12,6 +11,43 @@ class ApiService {
     receiveTimeout: const Duration(seconds: 30),
   ));
 
+  // ─── Menus ──────────────────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getMenus({String merchantId = 'merchant-001'}) async {
+    final res = await _dio.get('/menus', queryParameters: {'merchantId': merchantId});
+    return (res.data as Map<String, dynamic>)['data'] as List<dynamic>;
+  }
+
+  // ─── Stock ──────────────────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getStock({String merchantId = 'merchant-001'}) async {
+    final res = await _dio.get('/stock', queryParameters: {'merchantId': merchantId});
+    return (res.data as Map<String, dynamic>)['data'] as List<dynamic>;
+  }
+
+  Future<void> updateStock(String id, double quantity) async {
+    await _dio.patch('/stock/$id', data: {'quantity': quantity});
+  }
+
+  // ─── Orders ─────────────────────────────────────────────────────────────────
+
+  Future<List<dynamic>> getOrders({String merchantId = 'merchant-001'}) async {
+    final res = await _dio.get('/orders', queryParameters: {'merchantId': merchantId});
+    return (res.data as Map<String, dynamic>)['data'] as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateOrderStatus(String id, String status) async {
+    final res = await _dio.patch('/orders/$id/status', data: {'status': status});
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getGroupedOrders({String merchantId = 'merchant-001'}) async {
+    final res = await _dio.get('/orders/grouped', queryParameters: {'merchantId': merchantId});
+    return (res.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+  }
+
+  // ─── Rich Menu ──────────────────────────────────────────────────────────────
+
   Future<Map<String, dynamic>> deployCustomerMenu({
     required String shopName,
     required Uint8List imageBytes,
@@ -19,11 +55,7 @@ class ApiService {
   }) async {
     final form = FormData.fromMap({
       'shopName': shopName,
-      'image': MultipartFile.fromBytes(
-        imageBytes,
-        filename: 'rich_menu.png',
-        contentType: DioMediaType.parse(imageType),
-      ),
+      'image': MultipartFile.fromBytes(imageBytes, filename: 'rich_menu.png', contentType: DioMediaType.parse(imageType)),
     });
     final res = await _dio.post('/rich-menu/deploy/customer', data: form);
     return res.data as Map<String, dynamic>;
@@ -36,11 +68,7 @@ class ApiService {
   }) async {
     final form = FormData.fromMap({
       'shopName': shopName,
-      'image': MultipartFile.fromBytes(
-        imageBytes,
-        filename: 'rich_menu.png',
-        contentType: DioMediaType.parse(imageType),
-      ),
+      'image': MultipartFile.fromBytes(imageBytes, filename: 'rich_menu.png', contentType: DioMediaType.parse(imageType)),
     });
     final res = await _dio.post('/rich-menu/deploy/merchant', data: form);
     return res.data as Map<String, dynamic>;
@@ -49,8 +77,7 @@ class ApiService {
   Future<List<dynamic>> listRichMenus() async {
     try {
       final res = await _dio.get('/rich-menu');
-      final data = res.data as Map<String, dynamic>;
-      return data['data'] as List<dynamic>;
+      return (res.data as Map<String, dynamic>)['data'] as List<dynamic>;
     } on DioException {
       return [];
     }

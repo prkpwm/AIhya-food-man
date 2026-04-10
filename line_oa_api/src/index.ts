@@ -7,6 +7,7 @@ import ordersRouter from './routes/orders';
 import menusRouter from './routes/menus';
 import stockRouter from './routes/stock';
 import richMenuRouter from './routes/rich_menu';
+import { seedData } from './data/seed';
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use(errorHandler);
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 app.listen(env.port, () => {
+  seedData();
   console.table({
     step: 'server-start',
     port: env.port,

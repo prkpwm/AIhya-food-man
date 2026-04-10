@@ -13,8 +13,17 @@ class MenuListScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
+        child: ref.watch(menuListProvider).when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('$e')),
+          data: (_) => _buildBody(context, ref, byCategory),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, WidgetRef ref, Map<String, List<MenuModel>> byCategory) {
+    return CustomScrollView(
             // header
             SliverToBoxAdapter(
               child: Padding(
