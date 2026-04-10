@@ -47,6 +47,11 @@ class ApiService {
     await _dio.patch('/stock/$id', data: {'quantity': quantity});
   }
 
+  Future<Map<String, dynamic>> addIngredient(Map<String, dynamic> data) async {
+    final res = await _dio.post('/stock', data: data);
+    return res.data as Map<String, dynamic>;
+  }
+
   // ─── Orders ─────────────────────────────────────────────────────────────────
 
   Future<List<dynamic>> getOrders({String merchantId = 'merchant-001'}) async {

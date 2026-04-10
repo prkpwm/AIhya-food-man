@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:line_oa_food_order/core/models/ingredient_model.dart';
+import 'package:line_oa_food_order/core/services/api_service.dart';
 import 'package:line_oa_food_order/features/stock/providers/stock_provider.dart';
 
 class StockScreen extends ConsumerWidget {
@@ -29,14 +30,19 @@ class StockScreen extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('จัดการสต๊อก', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+                          const Text('จัดการสต๊อก',
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                          GestureDetector(
+                            onTap: () => _showAddSheet(context, ref),
+                            child: Container(
+                              width: 44, height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+                              ),
+                              child: const Icon(Icons.add, color: Color(0xFF1A1A1A)),
                             ),
-                            child: IconButton(icon: const Icon(Icons.add, color: Color(0xFF1A1A1A)), onPressed: () {}),
                           ),
                         ],
                       ),
@@ -57,7 +63,10 @@ class StockScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (_, i) => Padding(padding: const EdgeInsets.only(bottom: 10), child: _IngredientTile(ingredient: ingredients[i])),
+                    (_, i) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _IngredientTile(ingredient: ingredients[i]),
+                    ),
                     childCount: ingredients.length,
                   ),
                 ),
@@ -68,7 +77,19 @@ class StockScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _showAddSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => _AddIngredientSheet(ref: ref),
+    );
+  }
 }
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
 
 class _StatCard extends StatelessWidget {
   final String label;
@@ -92,6 +113,8 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+// ─── Ingredient Tile ──────────────────────────────────────────────────────────
+
 class _IngredientTile extends ConsumerWidget {
   final IngredientModel ingredient;
   const _IngredientTile({required this.ingredient});
@@ -100,7 +123,11 @@ class _IngredientTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isOut = !ingredient.isAvailable;
     final isLow = ingredient.isLowStock;
-    final statusColor = isOut ? const Color(0xFFF44336) : isLow ? const Color(0xFFFF9800) : const Color(0xFF7ECEC4);
+    final statusColor = isOut
+        ? const Color(0xFFF44336)
+        : isLow
+            ? const Color(0xFFFF9800)
+            : const Color(0xFF7ECEC4);
 
     return Container(
       decoration: BoxDecoration(
@@ -112,19 +139,33 @@ class _IngredientTile extends ConsumerWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 44, height: 44,
-          decoration: BoxDecoration(color: statusColor.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-          child: Icon(isOut ? Icons.close_rounded : Icons.check_rounded, color: statusColor, size: 20),
+          decoration: BoxDecoration(
+            color: statusColor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            isOut ? Icons.close_rounded : Icons.check_rounded,
+            color: statusColor, size: 20,
+          ),
         ),
-        title: Text(ingredient.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        title: Text(ingredient.name,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         subtitle: Text(
-          isOut ? 'หมดแล้ว' : isLow ? 'ใกล้หมด · ${ingredient.quantity} ${ingredient.unit}' : '${ingredient.quantity} ${ingredient.unit}',
+          isOut
+              ? 'หมดแล้ว'
+              : isLow
+                  ? 'ใกล้หมด · ${ingredient.quantity} ${ingredient.unit}'
+                  : '${ingredient.quantity} ${ingredient.unit}',
           style: TextStyle(color: statusColor, fontSize: 12),
         ),
         trailing: GestureDetector(
-          onTap: () => _showEditDialog(context, ref),
+          onTap: () => _showEditSheet(context, ref),
           child: Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1A1A1A)),
           ),
         ),
@@ -132,44 +173,231 @@ class _IngredientTile extends ConsumerWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, WidgetRef ref) {
-    final ctrl = TextEditingController(text: ingredient.quantity.toString());
+  void _showEditSheet(BuildContext context, WidgetRef ref) {
+    final qtyCtrl = TextEditingController(text: ingredient.quantity.toString());
+    final threshCtrl = TextEditingController(text: ingredient.lowStockThreshold.toString());
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => Padding(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setState) {
+          bool saving = false;
+          return Padding(
+            padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text('แก้ไข ${ingredient.name}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  // quick set buttons
+                  Row(children: [
+                    _QuickBtn(label: 'หมด', onTap: () => qtyCtrl.text = '0'),
+                    const SizedBox(width: 8),
+                    _QuickBtn(label: '+1', onTap: () {
+                      final v = double.tryParse(qtyCtrl.text) ?? 0;
+                      qtyCtrl.text = (v + 1).toString();
+                    }),
+                    const SizedBox(width: 8),
+                    _QuickBtn(label: '+5', onTap: () {
+                      final v = double.tryParse(qtyCtrl.text) ?? 0;
+                      qtyCtrl.text = (v + 5).toString();
+                    }),
+                  ]),
+                ]),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: qtyCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'จำนวนคงเหลือ (${ingredient.unit})',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true, fillColor: const Color(0xFFF5F5F5),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: threshCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'แจ้งเตือนเมื่อเหลือ (${ingredient.unit})',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true, fillColor: const Color(0xFFF5F5F5),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: saving ? null : () async {
+                      setState(() => saving = true);
+                      final newQty = double.tryParse(qtyCtrl.text) ?? ingredient.quantity;
+                      await ref.read(ingredientListProvider.notifier).updateQuantity(ingredient.id, newQty);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                    child: saving
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('บันทึก'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ─── Add Ingredient Sheet ─────────────────────────────────────────────────────
+
+class _AddIngredientSheet extends StatefulWidget {
+  final WidgetRef ref;
+  const _AddIngredientSheet({required this.ref});
+
+  @override
+  State<_AddIngredientSheet> createState() => _AddIngredientSheetState();
+}
+
+class _AddIngredientSheetState extends State<_AddIngredientSheet> {
+  final _nameCtrl = TextEditingController();
+  final _qtyCtrl = TextEditingController(text: '0');
+  final _threshCtrl = TextEditingController(text: '0.5');
+  String _unit = 'กก.';
+  bool _loading = false;
+
+  final _units = ['กก.', 'กรัม', 'ลิตร', 'มล.', 'ฟอง', 'ชิ้น', 'ถุง', 'กล่อง'];
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _qtyCtrl.dispose();
+    _threshCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_nameCtrl.text.isEmpty) return;
+    setState(() => _loading = true);
+    try {
+      await ApiService().addIngredient({
+        'merchantId': 'merchant-001',
+        'name': _nameCtrl.text.trim(),
+        'quantity': double.tryParse(_qtyCtrl.text) ?? 0,
+        'unit': _unit,
+        'lowStockThreshold': double.tryParse(_threshCtrl.text) ?? 0.5,
+      });
+      widget.ref.invalidate(ingredientListProvider);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('เพิ่มวัตถุดิบแล้ว'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('เกิดข้อผิดพลาด: $e'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('แก้ไข ${ingredient.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('เพิ่มวัตถุดิบ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            TextField(
-              controller: ctrl,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: 'จำนวน (${ingredient.unit})',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            _StockField(ctrl: _nameCtrl, label: 'ชื่อวัตถุดิบ'),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: _StockField(ctrl: _qtyCtrl, label: 'จำนวน', type: const TextInputType.numberWithOptions(decimal: true))),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _unit,
+                  decoration: InputDecoration(
+                    labelText: 'หน่วย',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true, fillColor: const Color(0xFFF5F5F5),
+                  ),
+                  items: _units.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                  onChanged: (v) => setState(() => _unit = v ?? _unit),
+                ),
               ),
-            ),
+            ]),
+            const SizedBox(height: 12),
+            _StockField(ctrl: _threshCtrl, label: 'แจ้งเตือนเมื่อเหลือ', type: const TextInputType.numberWithOptions(decimal: true)),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  final newQty = double.tryParse(ctrl.text) ?? ingredient.quantity;
-                  ref.read(ingredientListProvider.notifier).updateQuantity(ingredient.id, newQty);
-                  Navigator.pop(context);
-                },
-                child: const Text('บันทึก'),
+                onPressed: _loading ? null : _save,
+                child: _loading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('บันทึก'),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Small widgets ────────────────────────────────────────────────────────────
+
+class _QuickBtn extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _QuickBtn({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+}
+
+class _StockField extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String label;
+  final TextInputType type;
+  const _StockField({required this.ctrl, required this.label, this.type = TextInputType.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: type,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true, fillColor: const Color(0xFFF5F5F5),
       ),
     );
   }
