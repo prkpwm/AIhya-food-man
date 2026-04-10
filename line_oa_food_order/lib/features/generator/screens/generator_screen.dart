@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:line_oa_food_order/core/models/menu_model.dart';
 import 'package:line_oa_food_order/core/models/order_model.dart';
 import 'package:line_oa_food_order/core/services/flex_message_generator.dart';
+import 'package:line_oa_food_order/features/generator/screens/rich_menu_screen.dart';
 import 'package:line_oa_food_order/features/menu/providers/menu_provider.dart';
 import 'package:line_oa_food_order/features/order/providers/order_provider.dart';
 
@@ -21,7 +22,7 @@ class _GeneratorScreenState extends ConsumerState<GeneratorScreen>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 3, vsync: this);
+    _tab = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -64,6 +65,7 @@ class _GeneratorScreenState extends ConsumerState<GeneratorScreen>
                   Tab(text: 'เมนู'),
                   Tab(text: 'ออเดอร์'),
                   Tab(text: 'สรุป'),
+                  Tab(text: 'Rich Menu'),
                 ],
               ),
             ),
@@ -75,6 +77,7 @@ class _GeneratorScreenState extends ConsumerState<GeneratorScreen>
                   _MenuFlexTab(),
                   _OrderFlexTab(),
                   _SummaryFlexTab(),
+                  RichMenuScreen(),
                 ],
               ),
             ),

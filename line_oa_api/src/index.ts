@@ -6,6 +6,7 @@ import webhookRouter from './routes/webhook';
 import ordersRouter from './routes/orders';
 import menusRouter from './routes/menus';
 import stockRouter from './routes/stock';
+import richMenuRouter from './routes/rich_menu';
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/webhook', webhookRouter);
 app.use('/orders', ordersRouter);
 app.use('/menus', menusRouter);
 app.use('/stock', stockRouter);
+app.use('/rich-menu', richMenuRouter);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 
