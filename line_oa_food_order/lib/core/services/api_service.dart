@@ -4,10 +4,7 @@ class ApiService {
   static const String _prod = 'https://aihya-food-man.onrender.com';
   static const String _dev = 'http://localhost:3000';
 
-  // toggle: true = use prod, false = use local
-  static const bool _useProd = bool.fromEnvironment('USE_PROD', defaultValue: false);
-
-  static String get baseUrl => _useProd ? _prod : _dev;
+  static String get baseUrl => _prod;
 
   final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
