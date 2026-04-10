@@ -1,11 +1,16 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://aihya-food-man.onrender.com';
+  static const String _prod = 'https://aihya-food-man.onrender.com';
+  static const String _dev = 'http://localhost:3000';
+
+  // toggle: true = use prod, false = use local
+  static const bool _useProd = bool.fromEnvironment('USE_PROD', defaultValue: false);
+
+  static String get baseUrl => _useProd ? _prod : _dev;
 
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: _baseUrl,
+    baseUrl: baseUrl,
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
   ));
