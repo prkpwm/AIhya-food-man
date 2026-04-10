@@ -269,12 +269,12 @@ class _RichMenuTile extends ConsumerWidget {
             onTap: () async {
               final confirm = await showDialog<bool>(
                 context: context,
-                builder: (_) => AlertDialog(
+                builder: (dialogCtx) => AlertDialog(
                   title: const Text('ลบ Rich Menu'),
                   content: Text('ต้องการลบ "$name" ไหม?'),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('ยกเลิก')),
-                    ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('ลบ')),
+                    TextButton(onPressed: () => Navigator.of(dialogCtx).pop(false), child: const Text('ยกเลิก')),
+                    ElevatedButton(onPressed: () => Navigator.of(dialogCtx).pop(true), child: const Text('ลบ')),
                   ],
                 ),
               );
