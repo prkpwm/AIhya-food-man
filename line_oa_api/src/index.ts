@@ -14,6 +14,7 @@ const app = express();
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(cors());
+app.use('/images', express.static('public/images'));
 
 // increase body limit for base64 image uploads
 app.use('/webhook', express.raw({ type: 'application/json' }));
