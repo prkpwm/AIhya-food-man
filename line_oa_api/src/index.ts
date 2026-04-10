@@ -14,9 +14,10 @@ const app = express();
 
 app.use(cors());
 
-// raw body for LINE signature validation on webhook
+// increase body limit for base64 image uploads
 app.use('/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 

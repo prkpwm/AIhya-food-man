@@ -9,9 +9,14 @@ export function errorHandler(
 ): void {
   console.table({ step: 'error-handler', message: err.message, stack: err.stack });
 
+  // extract meaningful message from LINE API errors
+  const message = (err as { originalError?: { message?: string } }).originalError?.message
+    ?? err.message
+    ?? 'Internal server error';
+
   const body: ErrorResponse = {
     code: '500',
-    en: err.message || 'Internal server error',
+    en: message,
     th: 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์',
   };
 

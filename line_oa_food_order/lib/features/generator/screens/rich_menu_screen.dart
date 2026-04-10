@@ -26,7 +26,8 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+    // limit to 1MB to avoid request too large
+    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70, maxWidth: 2500);
     if (file == null) return;
     final bytes = await file.readAsBytes();
     setState(() {
