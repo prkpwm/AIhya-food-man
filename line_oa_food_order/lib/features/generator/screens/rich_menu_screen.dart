@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,10 +27,25 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    // limit to 1MB to avoid request too large
-    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70, maxWidth: 2500);
+    // pick without resizing — LINE needs exact 2500x843
+    final file = await picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
     final bytes = await file.readAsBytes();
+
+    // validate dimensions
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final w = frame.image.width;
+    final h = frame.image.height;
+    frame.image.dispose();
+
+    if (w != 2500 || h != 843) {
+      if (mounted) {
+        _showSnack('รูปต้องเป็น 2500×843 px (ได้ ${w}×${h} px)');
+      }
+      return;
+    }
+
     setState(() {
       _imageBase64 = base64Encode(bytes);
       _imageBytes = bytes;
