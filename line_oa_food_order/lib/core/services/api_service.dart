@@ -1,8 +1,8 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 class ApiService {
   static const String _prod = 'https://aihya-food-man.onrender.com';
-  static const String _dev = 'http://localhost:3000';
 
   static String get baseUrl => _prod;
 
@@ -14,27 +14,35 @@ class ApiService {
 
   Future<Map<String, dynamic>> deployCustomerMenu({
     required String shopName,
-    required String imageBase64,
+    required Uint8List imageBytes,
     String imageType = 'image/png',
   }) async {
-    final res = await _dio.post('/rich-menu/deploy/customer', data: {
+    final form = FormData.fromMap({
       'shopName': shopName,
-      'imageBase64': imageBase64,
-      'imageType': imageType,
+      'image': MultipartFile.fromBytes(
+        imageBytes,
+        filename: 'rich_menu.png',
+        contentType: DioMediaType.parse(imageType),
+      ),
     });
+    final res = await _dio.post('/rich-menu/deploy/customer', data: form);
     return res.data as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> deployMerchantMenu({
     required String shopName,
-    required String imageBase64,
+    required Uint8List imageBytes,
     String imageType = 'image/png',
   }) async {
-    final res = await _dio.post('/rich-menu/deploy/merchant', data: {
+    final form = FormData.fromMap({
       'shopName': shopName,
-      'imageBase64': imageBase64,
-      'imageType': imageType,
+      'image': MultipartFile.fromBytes(
+        imageBytes,
+        filename: 'rich_menu.png',
+        contentType: DioMediaType.parse(imageType),
+      ),
     });
+    final res = await _dio.post('/rich-menu/deploy/merchant', data: form);
     return res.data as Map<String, dynamic>;
   }
 

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -15,7 +14,6 @@ class RichMenuScreen extends ConsumerStatefulWidget {
 
 class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
   final _shopNameCtrl = TextEditingController(text: 'ร้านข้าวผัดแม่มาลี');
-  String? _imageBase64;
   Uint8List? _imageBytes;
   bool _isCustomer = true;
 
@@ -47,20 +45,19 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
     }
 
     setState(() {
-      _imageBase64 = base64Encode(bytes);
       _imageBytes = bytes;
     });
   }
 
   Future<void> _deploy() async {
-    if (_imageBase64 == null) {
+    if (_imageBytes == null) {
       _showSnack('กรุณาเลือกรูปภาพก่อน (ขนาด 2500×843 px)');
       return;
     }
     final notifier = ref.read(richMenuProvider.notifier);
     final id = _isCustomer
-        ? await notifier.deployCustomer(_shopNameCtrl.text.trim(), _imageBase64!)
-        : await notifier.deployMerchant(_shopNameCtrl.text.trim(), _imageBase64!);
+        ? await notifier.deployCustomer(_shopNameCtrl.text.trim(), _imageBytes!)
+        : await notifier.deployMerchant(_shopNameCtrl.text.trim(), _imageBytes!);
 
     if (id != null && mounted) {
       _showSnack('Deploy สำเร็จ! ID: $id');

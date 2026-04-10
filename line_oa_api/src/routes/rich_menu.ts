@@ -1,8 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import * as richMenuService from '../services/rich_menu.service';
 import { env } from '../config/env';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // GET /rich-menu — list all
 router.get('/', async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -16,49 +18,35 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction): Promis
   }
 });
 
-// POST /rich-menu/deploy/customer — deploy customer menu
-router.post('/deploy/customer', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// POST /rich-menu/deploy/customer — multipart: shopName + image file
+router.post('/deploy/customer', upload.single('image'), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { shopName, imageBase64, imageType } = req.body as {
-      shopName: string;
-      imageBase64: string;
-      imageType: 'image/jpeg' | 'image/png';
-    };
+    const shopName = req.body['shopName'] as string;
+    const file = req.file;
 
     console.table({
       step: 'deploy-customer',
       shopName,
-      hasImage: !!imageBase64,
-      imageType: imageType ?? 'none',
-      imageBase64Length: imageBase64?.length ?? 0,
+      hasFile: !!file,
+      mimetype: file?.mimetype ?? 'none',
+      fileSize: file?.size ?? 0,
       tokenLength: env.line.channelAccessToken.length,
     });
 
     if (!shopName) {
-      console.table({ step: 'deploy-customer', error: 'missing shopName' });
       res.status(400).json({ code: '400', en: 'shopName required', th: 'ข้อมูลไม่ครบ' });
       return;
     }
-
-    const menuRequest = richMenuService.buildCustomerMenu(shopName);
-    console.table({ step: 'deploy-customer', action: 'menu-built', areas: menuRequest.areas?.length ?? 0 });
-
-    if (!imageBase64) {
-      console.table({ step: 'deploy-customer', action: 'create-without-image' });
-      const { messagingApi } = await import('@line/bot-sdk');
-      const client = new messagingApi.MessagingApiClient({ channelAccessToken: env.line.channelAccessToken });
-      const { richMenuId } = await client.createRichMenu(menuRequest);
-      console.table({ step: 'deploy-customer', action: 'created', richMenuId });
-      // NOTE: cannot setDefaultRichMenu without image — LINE requires image first
-      res.json({ success: true, data: { richMenuId, warning: 'Image required to set as default' } });
+    if (!file) {
+      res.status(400).json({ code: '400', en: 'image file required', th: 'กรุณาแนบรูปภาพ' });
       return;
     }
 
-    const imageBuffer = Buffer.from(imageBase64, 'base64');
-    const type = imageType ?? 'image/png';
-    console.table({ step: 'deploy-customer', action: 'uploading-image', type, bufferSize: imageBuffer.length });
+    const imageType = file.mimetype === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+    const menuRequest = richMenuService.buildCustomerMenu(shopName);
+    console.table({ step: 'deploy-customer', action: 'menu-built', areas: menuRequest.areas?.length ?? 0 });
 
-    const richMenuId = await richMenuService.createAndSetDefault(menuRequest, imageBuffer, type);
+    const richMenuId = await richMenuService.createAndSetDefault(menuRequest, file.buffer, imageType);
     console.table({ step: 'deploy-customer', action: 'done', richMenuId });
 
     res.json({ success: true, data: { richMenuId } });
@@ -68,49 +56,35 @@ router.post('/deploy/customer', async (req: Request, res: Response, next: NextFu
   }
 });
 
-// POST /rich-menu/deploy/merchant — deploy merchant menu
-router.post('/deploy/merchant', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// POST /rich-menu/deploy/merchant — multipart: shopName + image file
+router.post('/deploy/merchant', upload.single('image'), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { shopName, imageBase64, imageType } = req.body as {
-      shopName: string;
-      imageBase64: string;
-      imageType: 'image/jpeg' | 'image/png';
-    };
+    const shopName = req.body['shopName'] as string;
+    const file = req.file;
 
     console.table({
       step: 'deploy-merchant',
       shopName,
-      hasImage: !!imageBase64,
-      imageType: imageType ?? 'none',
-      imageBase64Length: imageBase64?.length ?? 0,
+      hasFile: !!file,
+      mimetype: file?.mimetype ?? 'none',
+      fileSize: file?.size ?? 0,
       tokenLength: env.line.channelAccessToken.length,
     });
 
     if (!shopName) {
-      console.table({ step: 'deploy-merchant', error: 'missing shopName' });
       res.status(400).json({ code: '400', en: 'shopName required', th: 'ข้อมูลไม่ครบ' });
       return;
     }
-
-    const menuRequest = richMenuService.buildMerchantMenu(shopName);
-    console.table({ step: 'deploy-merchant', action: 'menu-built', areas: menuRequest.areas?.length ?? 0 });
-
-    if (!imageBase64) {
-      console.table({ step: 'deploy-merchant', action: 'create-without-image' });
-      const { messagingApi } = await import('@line/bot-sdk');
-      const client = new messagingApi.MessagingApiClient({ channelAccessToken: env.line.channelAccessToken });
-      const { richMenuId } = await client.createRichMenu(menuRequest);
-      console.table({ step: 'deploy-merchant', action: 'created', richMenuId });
-      // NOTE: cannot setDefaultRichMenu without image — LINE requires image first
-      res.json({ success: true, data: { richMenuId, warning: 'Image required to set as default' } });
+    if (!file) {
+      res.status(400).json({ code: '400', en: 'image file required', th: 'กรุณาแนบรูปภาพ' });
       return;
     }
 
-    const imageBuffer = Buffer.from(imageBase64, 'base64');
-    const type = imageType ?? 'image/png';
-    console.table({ step: 'deploy-merchant', action: 'uploading-image', type, bufferSize: imageBuffer.length });
+    const imageType = file.mimetype === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+    const menuRequest = richMenuService.buildMerchantMenu(shopName);
+    console.table({ step: 'deploy-merchant', action: 'menu-built', areas: menuRequest.areas?.length ?? 0 });
 
-    const richMenuId = await richMenuService.createAndSetDefault(menuRequest, imageBuffer, type);
+    const richMenuId = await richMenuService.createAndSetDefault(menuRequest, file.buffer, imageType);
     console.table({ step: 'deploy-merchant', action: 'done', richMenuId });
 
     res.json({ success: true, data: { richMenuId } });
