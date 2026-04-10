@@ -1,0 +1,28 @@
+import { Request, Response, NextFunction } from 'express';
+import { ErrorResponse } from '../types';
+
+export function errorHandler(
+  err: Error,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+): void {
+  console.table({ step: 'error-handler', message: err.message, stack: err.stack });
+
+  const body: ErrorResponse = {
+    code: '500',
+    en: err.message || 'Internal server error',
+    th: 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์',
+  };
+
+  res.status(500).json(body);
+}
+
+export function notFound(_req: Request, res: Response): void {
+  const body: ErrorResponse = {
+    code: '404',
+    en: 'Route not found',
+    th: 'ไม่พบเส้นทางที่ร้องขอ',
+  };
+  res.status(404).json(body);
+}
