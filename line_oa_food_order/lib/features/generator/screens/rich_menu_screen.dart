@@ -4,9 +4,92 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:line_oa_food_order/features/generator/providers/rich_menu_provider.dart';
 
-// button layout definitions (mirrors server)
-const _customerButtons = ['ดูเมนู', 'ออเดอร์', 'โปรโมชั่น'];
-const _merchantButtons = ['ออเดอร์', 'สต๊อก', 'รายได้', 'เพิ่มเมนู'];
+// ─── Template definitions ─────────────────────────────────────────────────────
+
+class _RichMenuTemplate {
+  final String id;
+  final String name;
+  final String description;
+  final List<_BtnDef> buttons;
+  final bool isCustomer;
+
+  const _RichMenuTemplate({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.buttons,
+    required this.isCustomer,
+  });
+}
+
+class _BtnDef {
+  final String label;
+  final Color color;
+  final Color textColor;
+  const _BtnDef(this.label, {this.color = const Color(0xFF1A1A1A), this.textColor = Colors.white});
+}
+
+final _templates = [
+  _RichMenuTemplate(
+    id: 'customer-basic',
+    name: 'ลูกค้า — พื้นฐาน',
+    description: '3 ปุ่ม: ดูเมนู / ออเดอร์ / โปรโมชั่น',
+    isCustomer: true,
+    buttons: [
+      _BtnDef('ดูเมนู', color: const Color(0xFF06C755)),
+      _BtnDef('ออเดอร์', color: const Color(0xFF1A1A1A)),
+      _BtnDef('โปรโมชั่น', color: const Color(0xFFFF6B00)),
+    ],
+  ),
+  _RichMenuTemplate(
+    id: 'customer-dark',
+    name: 'ลูกค้า — Dark',
+    description: '3 ปุ่ม สไตล์มืด',
+    isCustomer: true,
+    buttons: [
+      _BtnDef('🍽️ เมนู', color: const Color(0xFF2C2C2C)),
+      _BtnDef('📦 ออเดอร์', color: const Color(0xFF2C2C2C)),
+      _BtnDef('🎁 โปร', color: const Color(0xFF2C2C2C)),
+    ],
+  ),
+  _RichMenuTemplate(
+    id: 'customer-mint',
+    name: 'ลูกค้า — Mint',
+    description: '3 ปุ่ม สไตล์ mint',
+    isCustomer: true,
+    buttons: [
+      _BtnDef('เมนู', color: const Color(0xFF7ECEC4)),
+      _BtnDef('ออเดอร์', color: const Color(0xFF7ECEC4)),
+      _BtnDef('โปรโมชั่น', color: const Color(0xFF7ECEC4)),
+    ],
+  ),
+  _RichMenuTemplate(
+    id: 'merchant-basic',
+    name: 'เจ้าของร้าน — พื้นฐาน',
+    description: '4 ปุ่ม: ออเดอร์ / สต๊อก / รายได้ / เพิ่มเมนู',
+    isCustomer: false,
+    buttons: [
+      _BtnDef('ออเดอร์', color: const Color(0xFF1A1A1A)),
+      _BtnDef('สต๊อก', color: const Color(0xFFFF9800)),
+      _BtnDef('รายได้', color: const Color(0xFF06C755)),
+      _BtnDef('เพิ่มเมนู', color: const Color(0xFF2196F3)),
+    ],
+  ),
+  _RichMenuTemplate(
+    id: 'merchant-dark',
+    name: 'เจ้าของร้าน — Dark',
+    description: '4 ปุ่ม สไตล์มืด',
+    isCustomer: false,
+    buttons: [
+      _BtnDef('📋 ออเดอร์', color: const Color(0xFF2C2C2C)),
+      _BtnDef('📦 สต๊อก', color: const Color(0xFF2C2C2C)),
+      _BtnDef('💰 รายได้', color: const Color(0xFF2C2C2C)),
+      _BtnDef('➕ เมนู', color: const Color(0xFF2C2C2C)),
+    ],
+  ),
+];
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 class RichMenuScreen extends ConsumerStatefulWidget {
   const RichMenuScreen({super.key});
@@ -18,7 +101,7 @@ class RichMenuScreen extends ConsumerStatefulWidget {
 class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
   final _shopNameCtrl = TextEditingController(text: 'ร้านข้าวผัดแม่มาลี');
   Uint8List? _imageBytes;
-  bool _isCustomer = true;
+  _RichMenuTemplate _selected = _templates.first;
 
   @override
   void dispose() {
@@ -27,8 +110,7 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
+    final file = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (file == null) return;
     final bytes = await file.readAsBytes();
     setState(() => _imageBytes = bytes);
@@ -40,10 +122,9 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
       return;
     }
     final notifier = ref.read(richMenuProvider.notifier);
-    final id = _isCustomer
+    final id = _selected.isCustomer
         ? await notifier.deployCustomer(_shopNameCtrl.text.trim(), _imageBytes!)
         : await notifier.deployMerchant(_shopNameCtrl.text.trim(), _imageBytes!);
-
     if (id != null && mounted) _showSnack('Deploy สำเร็จ! ID: $id');
   }
 
@@ -53,7 +134,6 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
   @override
   Widget build(BuildContext context) {
     final richMenuState = ref.watch(richMenuProvider);
-    final buttons = _isCustomer ? _customerButtons : _merchantButtons;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -80,26 +160,35 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('ตั้งค่า', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                          const SizedBox(height: 12),
                           TextField(
                             controller: _shopNameCtrl,
                             decoration: InputDecoration(
                               labelText: 'ชื่อร้าน',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              filled: true,
-                              fillColor: const Color(0xFFF5F5F5),
+                              filled: true, fillColor: const Color(0xFFF5F5F5),
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              const Text('ประเภท', style: TextStyle(fontWeight: FontWeight.w600)),
-                              const SizedBox(width: 12),
-                              _TypeChip(label: 'ลูกค้า', selected: _isCustomer, onTap: () => setState(() => _isCustomer = true)),
-                              const SizedBox(width: 8),
-                              _TypeChip(label: 'เจ้าของร้าน', selected: !_isCustomer, onTap: () => setState(() => _isCustomer = false)),
-                            ],
+                          // template dropdown
+                          DropdownButtonFormField<_RichMenuTemplate>(
+                            value: _selected,
+                            decoration: InputDecoration(
+                              labelText: 'เลือก Template',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              filled: true, fillColor: const Color(0xFFF5F5F5),
+                            ),
+                            items: _templates.map((t) => DropdownMenuItem(
+                              value: t,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(t.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                  Text(t.description, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                                ],
+                              ),
+                            )).toList(),
+                            onChanged: (v) => setState(() => _selected = v ?? _selected),
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
@@ -108,7 +197,7 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                               onPressed: richMenuState.isLoading ? null : _deploy,
                               child: richMenuState.isLoading
                                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : Text('Deploy ${_isCustomer ? 'ลูกค้า' : 'เจ้าของร้าน'} Rich Menu'),
+                                  : Text('Deploy ${_selected.name}'),
                             ),
                           ),
                         ],
@@ -116,7 +205,7 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // ── live preview ─────────────────────────────────────────
+                    // ── preview ──────────────────────────────────────────────
                     const Text('Preview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 10),
                     GestureDetector(
@@ -128,37 +217,32 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              // background
+                              // bg
                               _imageBytes != null
                                   ? Image.memory(_imageBytes!, fit: BoxFit.cover)
                                   : Container(
                                       color: const Color(0xFF2C2C2C),
                                       child: const Center(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.add_photo_alternate_outlined, color: Colors.white54, size: 32),
-                                            SizedBox(height: 8),
-                                            Text('แตะเพื่อเลือกรูป background', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                                          ],
-                                        ),
+                                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                          Icon(Icons.add_photo_alternate_outlined, color: Colors.white38, size: 28),
+                                          SizedBox(height: 6),
+                                          Text('แตะเพื่อเลือกรูป background', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                                        ]),
                                       ),
                                     ),
-                              // layout overlay
-                              _LayoutOverlay(buttons: buttons),
+                              // button overlay (fixed, not editable)
+                              _TemplateOverlay(template: _selected),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
-                      'แตะ preview เพื่อเปลี่ยนรูป • server จะ generate layout ให้อัตโนมัติ',
+                      'แตะ preview เพื่อเปลี่ยนรูป bg • ปุ่มตาม template ที่เลือก',
                       style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                     ),
                     const SizedBox(height: 20),
-
-                    // ── deployed list ────────────────────────────────────────
                     const Text('Rich Menu ที่ Deploy แล้ว', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 10),
                   ],
@@ -167,16 +251,9 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
             ),
             richMenuState.when(
               loading: () => const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))),
-              error: (e, _) => SliverToBoxAdapter(
-                child: Padding(padding: const EdgeInsets.all(20), child: Text('$e', style: const TextStyle(color: Colors.red))),
-              ),
+              error: (e, _) => SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.all(20), child: Text('$e', style: const TextStyle(color: Colors.red)))),
               data: (menus) => menus.isEmpty
-                  ? const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Center(child: Text('ยังไม่มี Rich Menu', style: TextStyle(color: Color(0xFF9E9E9E)))),
-                      ),
-                    )
+                  ? const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(20), child: Center(child: Text('ยังไม่มี Rich Menu', style: TextStyle(color: Color(0xFF9E9E9E))))))
                   : SliverPadding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                       sliver: SliverList(
@@ -194,35 +271,37 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
   }
 }
 
-// ─── Layout Overlay ───────────────────────────────────────────────────────────
+// ─── Template Overlay ─────────────────────────────────────────────────────────
 
-class _LayoutOverlay extends StatelessWidget {
-  final List<String> buttons;
-  const _LayoutOverlay({required this.buttons});
+class _TemplateOverlay extends StatelessWidget {
+  final _RichMenuTemplate template;
+  const _TemplateOverlay({required this.template});
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: buttons.asMap().entries.map((e) {
-        final isLast = e.key == buttons.length - 1;
+      children: template.buttons.asMap().entries.map((e) {
+        final isLast = e.key == template.buttons.length - 1;
+        final btn = e.value;
         return Expanded(
           child: Container(
             decoration: BoxDecoration(
-              border: Border(
-                right: isLast ? BorderSide.none : const BorderSide(color: Colors.white54, width: 1.5),
-              ),
+              border: Border(right: isLast ? BorderSide.none : const BorderSide(color: Colors.white24, width: 1)),
             ),
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.55),
+                  color: btn.color,
                   borderRadius: BorderRadius.circular(20),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4)],
                 ),
                 child: Text(
-                  e.value,
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  btn.label,
+                  style: TextStyle(color: btn.textColor, fontSize: 10, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
@@ -257,13 +336,10 @@ class _RichMenuTile extends ConsumerWidget {
           const Icon(Icons.grid_view, color: Color(0xFF7ECEC4), size: 28),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                Text(id, style: const TextStyle(fontSize: 10, color: Color(0xFF9E9E9E))),
-              ],
-            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(id, style: const TextStyle(fontSize: 10, color: Color(0xFF9E9E9E))),
+            ]),
           ),
           GestureDetector(
             onTap: () async {
@@ -287,35 +363,6 @@ class _RichMenuTile extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─── Type Chip ────────────────────────────────────────────────────────────────
-
-class _TypeChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _TypeChip({required this.label, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(50),
-        ),
-        child: Text(label,
-            style: TextStyle(
-              color: selected ? Colors.white : const Color(0xFF9E9E9E),
-              fontSize: 13,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-            )),
       ),
     );
   }
