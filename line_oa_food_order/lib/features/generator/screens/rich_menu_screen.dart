@@ -172,6 +172,7 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                           // template dropdown
                           DropdownButtonFormField<_RichMenuTemplate>(
                             value: _selected,
+                            isExpanded: true,
                             decoration: InputDecoration(
                               labelText: 'เลือก Template',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -179,17 +180,12 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                             ),
                             items: _templates.map((t) => DropdownMenuItem(
                               value: t,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(t.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                  Text(t.description, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
-                                ],
-                              ),
+                              child: Text(t.name, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis),
                             )).toList(),
                             onChanged: (v) => setState(() => _selected = v ?? _selected),
                           ),
+                          const SizedBox(height: 6),
+                          Text(_selected.description, style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
                           const SizedBox(height: 16),
                           SizedBox(
                             width: double.infinity,
