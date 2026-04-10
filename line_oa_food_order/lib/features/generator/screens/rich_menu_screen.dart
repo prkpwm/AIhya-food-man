@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:line_oa_food_order/features/generator/providers/rich_menu_provider.dart';
 
+// button layout definitions (mirrors server)
+const _customerButtons = ['ดูเมนู', 'ออเดอร์', 'โปรโมชั่น'];
+const _merchantButtons = ['ออเดอร์', 'สต๊อก', 'รายได้', 'เพิ่มเมนู'];
+
 class RichMenuScreen extends ConsumerStatefulWidget {
   const RichMenuScreen({super.key});
 
@@ -27,14 +31,12 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
     final file = await picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
     final bytes = await file.readAsBytes();
-    setState(() {
-      _imageBytes = bytes;
-    });
+    setState(() => _imageBytes = bytes);
   }
 
   Future<void> _deploy() async {
     if (_imageBytes == null) {
-      _showSnack('กรุณาเลือกรูปภาพก่อน (ขนาด 2500×843 px)');
+      _showSnack('กรุณาเลือกรูป background ก่อน');
       return;
     }
     final notifier = ref.read(richMenuProvider.notifier);
@@ -42,20 +44,16 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
         ? await notifier.deployCustomer(_shopNameCtrl.text.trim(), _imageBytes!)
         : await notifier.deployMerchant(_shopNameCtrl.text.trim(), _imageBytes!);
 
-    if (id != null && mounted) {
-      _showSnack('Deploy สำเร็จ! ID: $id');
-    }
+    if (id != null && mounted) _showSnack('Deploy สำเร็จ! ID: $id');
   }
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
-    );
-  }
+  void _showSnack(String msg) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
 
   @override
   Widget build(BuildContext context) {
     final richMenuState = ref.watch(richMenuProvider);
+    final buttons = _isCustomer ? _customerButtons : _merchantButtons;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -70,7 +68,8 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                   children: [
                     const Text('Rich Menu', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    // config card
+
+                    // ── config card ──────────────────────────────────────────
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -93,7 +92,6 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          // type toggle
                           Row(
                             children: [
                               const Text('ประเภท', style: TextStyle(fontWeight: FontWeight.w600)),
@@ -102,35 +100,6 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                               const SizedBox(width: 8),
                               _TypeChip(label: 'เจ้าของร้าน', selected: !_isCustomer, onTap: () => setState(() => _isCustomer = false)),
                             ],
-                          ),
-                          const SizedBox(height: 12),
-                          // image picker
-                          GestureDetector(
-                            onTap: _pickImage,
-                            child: Container(
-                              width: double.infinity,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF5F5F5),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade300),
-                              ),
-                              child: _imageBytes != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.memory(_imageBytes!, fit: BoxFit.cover),
-                                    )
-                                  : const Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.image_outlined, size: 36, color: Color(0xFF9E9E9E)),
-                                        SizedBox(height: 8),
-                                        Text('เลือกรูป Rich Menu', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
-                                        SizedBox(height: 4),
-                                        Text('รองรับทุกขนาด (server จะ resize ให้)', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 11)),
-                                      ],
-                                    ),
-                            ),
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
@@ -145,29 +114,51 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    // layout preview
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Layout Preview — ${_isCustomer ? 'ลูกค้า' : 'เจ้าของร้าน'}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    const SizedBox(height: 16),
+
+                    // ── live preview ─────────────────────────────────────────
+                    const Text('Preview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: AspectRatio(
+                          aspectRatio: 2500 / 843,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              // background
+                              _imageBytes != null
+                                  ? Image.memory(_imageBytes!, fit: BoxFit.cover)
+                                  : Container(
+                                      color: const Color(0xFF2C2C2C),
+                                      child: const Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.add_photo_alternate_outlined, color: Colors.white54, size: 32),
+                                            SizedBox(height: 8),
+                                            Text('แตะเพื่อเลือกรูป background', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                              // layout overlay
+                              _LayoutOverlay(buttons: buttons),
+                            ],
                           ),
-                          const SizedBox(height: 10),
-                          _isCustomer ? const _CustomerLayoutPreview() : const _MerchantLayoutPreview(),
-                        ],
+                        ),
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'แตะ preview เพื่อเปลี่ยนรูป • server จะ generate layout ให้อัตโนมัติ',
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    ),
                     const SizedBox(height: 20),
-                    // deployed list
+
+                    // ── deployed list ────────────────────────────────────────
                     const Text('Rich Menu ที่ Deploy แล้ว', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 10),
                   ],
@@ -175,12 +166,9 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
               ),
             ),
             richMenuState.when(
-              loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
+              loading: () => const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))),
               error: (e, _) => SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text('$e', style: const TextStyle(color: Colors.red)),
-                ),
+                child: Padding(padding: const EdgeInsets.all(20), child: Text('$e', style: const TextStyle(color: Colors.red))),
               ),
               data: (menus) => menus.isEmpty
                   ? const SliverToBoxAdapter(
@@ -206,53 +194,41 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
   }
 }
 
-// ─── Layout Previews ──────────────────────────────────────────────────────────
+// ─── Layout Overlay ───────────────────────────────────────────────────────────
 
-class _CustomerLayoutPreview extends StatelessWidget {
-  const _CustomerLayoutPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return _PreviewGrid(buttons: const ['ดูเมนู', 'ออเดอร์ของฉัน', 'โปรโมชั่น']);
-  }
-}
-
-class _MerchantLayoutPreview extends StatelessWidget {
-  const _MerchantLayoutPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return _PreviewGrid(buttons: const ['ออเดอร์', 'สต๊อก', 'รายได้', 'เพิ่มเมนู']);
-  }
-}
-
-class _PreviewGrid extends StatelessWidget {
+class _LayoutOverlay extends StatelessWidget {
   final List<String> buttons;
-  const _PreviewGrid({required this.buttons});
+  const _LayoutOverlay({required this.buttons});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: buttons.asMap().entries.map((e) {
-          final isLast = e.key == buttons.length - 1;
-          return Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(right: isLast ? BorderSide.none : const BorderSide(color: Colors.white24)),
-              ),
-              child: Center(
-                child: Text(e.value, style: const TextStyle(color: Colors.white, fontSize: 11), textAlign: TextAlign.center),
+    return Row(
+      children: buttons.asMap().entries.map((e) {
+        final isLast = e.key == buttons.length - 1;
+        return Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                right: isLast ? BorderSide.none : const BorderSide(color: Colors.white54, width: 1.5),
               ),
             ),
-          );
-        }).toList(),
-      ),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.55),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  e.value,
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -302,9 +278,7 @@ class _RichMenuTile extends ConsumerWidget {
                   ],
                 ),
               );
-              if (confirm == true) {
-                await ref.read(richMenuProvider.notifier).delete(id);
-              }
+              if (confirm == true) await ref.read(richMenuProvider.notifier).delete(id);
             },
             child: Container(
               padding: const EdgeInsets.all(8),

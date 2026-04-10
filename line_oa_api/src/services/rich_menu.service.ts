@@ -1,6 +1,6 @@
 import { messagingApi } from '@line/bot-sdk';
-import sharp from 'sharp';
 import { env } from '../config/env';
+import { generateRichMenuImage, customerAreas, merchantAreas } from './rich_menu_canvas';
 
 type RichMenuRequest = messagingApi.RichMenuRequest;
 type RichMenuResponse = messagingApi.RichMenuResponse;
@@ -71,56 +71,44 @@ export function buildMerchantMenu(shopName: string): RichMenuRequest {
   };
 }
 
-// ─── Compress image to fit LINE's 1MB limit at exact 2500x843 ────────────────
-
-async function compressForLine(input: Buffer): Promise<{ buffer: Buffer; type: 'image/jpeg' | 'image/png' }> {
-  // resize to exact 2500x843 and compress as JPEG under 1MB
-  let quality = 90;
-  let buffer: Buffer;
-
-  do {
-    buffer = await sharp(input)
-      .resize(2500, 843, { fit: 'fill' })
-      .jpeg({ quality })
-      .toBuffer();
-    quality -= 10;
-  } while (buffer.length > 900 * 1024 && quality > 10); // stay under 900KB
-
-  console.table({
-    step: 'image-compressed',
-    originalSize: input.length,
-    compressedSize: buffer.length,
-    quality: quality + 10,
-  });
-
-  return { buffer, type: 'image/jpeg' };
-}
-
 // ─── Deploy ───────────────────────────────────────────────────────────────────
 
-export async function createAndSetDefault(
+export async function deployCustomerMenu(
+  shopName: string,
+  bgBuffer: Buffer
+): Promise<string> {
+  const menuRequest = buildCustomerMenu(shopName);
+  const image = await generateRichMenuImage(bgBuffer, customerAreas);
+  return _createAndDeploy(menuRequest, image);
+}
+
+export async function deployMerchantMenu(
+  shopName: string,
+  bgBuffer: Buffer
+): Promise<string> {
+  const menuRequest = buildMerchantMenu(shopName);
+  const image = await generateRichMenuImage(bgBuffer, merchantAreas);
+  return _createAndDeploy(menuRequest, image);
+}
+
+async function _createAndDeploy(
   menuRequest: RichMenuRequest,
-  imageBuffer: Buffer,
-  _imageType: 'image/jpeg' | 'image/png'
+  imageBuffer: Buffer
 ): Promise<string> {
   const client = getClient();
   const blobClient = getBlobClient();
 
-  // 1. create rich menu
   const { richMenuId } = await client.createRichMenu(menuRequest);
   console.table({ step: 'rich-menu-created', richMenuId });
 
-  // 2. compress + resize to LINE spec (2500x843, <1MB JPEG)
-  const { buffer: compressed, type } = await compressForLine(imageBuffer);
+  const rawBuffer = imageBuffer.buffer instanceof SharedArrayBuffer
+    ? (imageBuffer.buffer.slice(0) as unknown as ArrayBuffer)
+    : (imageBuffer.buffer.slice(imageBuffer.byteOffset, imageBuffer.byteOffset + imageBuffer.byteLength) as unknown as ArrayBuffer);
 
-  const rawBuffer = compressed.buffer instanceof SharedArrayBuffer
-    ? (compressed.buffer.slice(0) as unknown as ArrayBuffer)
-    : (compressed.buffer.slice(compressed.byteOffset, compressed.byteOffset + compressed.byteLength) as unknown as ArrayBuffer);
-  const blob = new Blob([rawBuffer], { type });
+  const blob = new Blob([rawBuffer], { type: 'image/jpeg' });
   await blobClient.setRichMenuImage(richMenuId, blob);
-  console.table({ step: 'rich-menu-image-uploaded', richMenuId, type, size: compressed.length });
+  console.table({ step: 'rich-menu-image-uploaded', richMenuId, size: imageBuffer.length });
 
-  // 3. set as default
   await client.setDefaultRichMenu(richMenuId);
   console.table({ step: 'rich-menu-deployed', richMenuId });
 
