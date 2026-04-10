@@ -306,12 +306,12 @@ class _FlexLayoutState extends State<_FlexLayout> {
         return MapEntry(k, v);
       }));
 
-  String get _currentJson => _mode == 1
-      ? FlexMessageGenerator.toJsonString(_editedFlex)
-      : widget.json ?? '';
+  String get _currentJson => FlexMessageGenerator.toJsonString(
+        _editedFlex.isNotEmpty ? _editedFlex : (widget.flexData ?? {}),
+      );
 
   Future<void> _launch() async {
-    if (widget.json == null) return;
+    if (widget.flexData == null) return;
     setState(() => _launching = true);
     try {
       await ApiService().broadcastFlex(_currentJson);

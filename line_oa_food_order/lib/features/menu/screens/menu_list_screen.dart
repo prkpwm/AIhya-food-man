@@ -397,7 +397,7 @@ class _MenuDetailSheetState extends ConsumerState<_MenuDetailSheet> {
                     ));
                   } : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A1A1A),
+                    backgroundColor: const Color(0xFFFF6B00),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
                   ),
