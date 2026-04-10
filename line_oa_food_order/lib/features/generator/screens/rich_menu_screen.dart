@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -25,25 +24,9 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    // pick without resizing — LINE needs exact 2500x843
     final file = await picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
     final bytes = await file.readAsBytes();
-
-    // validate dimensions
-    final codec = await ui.instantiateImageCodec(bytes);
-    final frame = await codec.getNextFrame();
-    final w = frame.image.width;
-    final h = frame.image.height;
-    frame.image.dispose();
-
-    if (w != 2500 || h != 843) {
-      if (mounted) {
-        _showSnack('รูปต้องเป็น 2500×843 px (ได้ ${w}×${h} px)');
-      }
-      return;
-    }
-
     setState(() {
       _imageBytes = bytes;
     });
@@ -144,7 +127,7 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                                         SizedBox(height: 8),
                                         Text('เลือกรูป Rich Menu', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
                                         SizedBox(height: 4),
-                                        Text('ต้องเป็น 2500×843 px (JPEG/PNG)', style: TextStyle(color: Color(0xFFF44336), fontSize: 11)),
+                                        Text('รองรับทุกขนาด (server จะ resize ให้)', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 11)),
                                       ],
                                     ),
                             ),
