@@ -12,6 +12,7 @@ class _RichMenuTemplate {
   final String description;
   final List<_BtnDef> buttons;
   final bool isCustomer;
+  final bool isLarge; // 2500x1686 vs 2500x843
 
   const _RichMenuTemplate({
     required this.id,
@@ -19,6 +20,7 @@ class _RichMenuTemplate {
     required this.description,
     required this.buttons,
     required this.isCustomer,
+    this.isLarge = false,
   });
 }
 
@@ -32,13 +34,28 @@ class _BtnDef {
 final _templates = [
   _RichMenuTemplate(
     id: 'customer-basic',
-    name: 'ลูกค้า — พื้นฐาน',
+    name: 'ลูกค้า — พื้นฐาน (ครึ่งหน้าจอ)',
     description: '3 ปุ่ม: ดูเมนู / ออเดอร์ / โปรโมชั่น',
     isCustomer: true,
     buttons: [
       _BtnDef('ดูเมนู', color: const Color(0xFF06C755)),
       _BtnDef('ออเดอร์', color: const Color(0xFF1A1A1A)),
       _BtnDef('โปรโมชั่น', color: const Color(0xFFFF6B00)),
+    ],
+  ),
+  _RichMenuTemplate(
+    id: 'customer-large',
+    name: 'ลูกค้า — เต็มหน้าจอ (2500×1686)',
+    description: '3 ปุ่มบน + 3 ปุ่มล่าง',
+    isCustomer: true,
+    isLarge: true,
+    buttons: [
+      _BtnDef('ดูเมนู', color: const Color(0xFF06C755)),
+      _BtnDef('ออเดอร์', color: const Color(0xFF1A1A1A)),
+      _BtnDef('โปรโมชั่น', color: const Color(0xFFFF6B00)),
+      _BtnDef('เมนูโปรด', color: const Color(0xFF9C27B0)),
+      _BtnDef('ดูตะกร้า', color: const Color(0xFF2196F3)),
+      _BtnDef('ติดต่อร้าน', color: const Color(0xFF607D8B)),
     ],
   ),
   _RichMenuTemplate(
@@ -65,7 +82,7 @@ final _templates = [
   ),
   _RichMenuTemplate(
     id: 'merchant-basic',
-    name: 'เจ้าของร้าน — พื้นฐาน',
+    name: 'เจ้าของร้าน — พื้นฐาน (ครึ่งหน้าจอ)',
     description: '4 ปุ่ม: ออเดอร์ / สต๊อก / รายได้ / เพิ่มเมนู',
     isCustomer: false,
     buttons: [
@@ -73,6 +90,23 @@ final _templates = [
       _BtnDef('สต๊อก', color: const Color(0xFFFF9800)),
       _BtnDef('รายได้', color: const Color(0xFF06C755)),
       _BtnDef('เพิ่มเมนู', color: const Color(0xFF2196F3)),
+    ],
+  ),
+  _RichMenuTemplate(
+    id: 'merchant-large',
+    name: 'เจ้าของร้าน — เต็มหน้าจอ (2500×1686)',
+    description: '4 ปุ่มบน + 4 ปุ่มล่าง',
+    isCustomer: false,
+    isLarge: true,
+    buttons: [
+      _BtnDef('ออเดอร์', color: const Color(0xFF1A1A1A)),
+      _BtnDef('สต๊อก', color: const Color(0xFFFF9800)),
+      _BtnDef('รายได้', color: const Color(0xFF06C755)),
+      _BtnDef('เพิ่มเมนู', color: const Color(0xFF2196F3)),
+      _BtnDef('ตั้งค่า', color: const Color(0xFF607D8B)),
+      _BtnDef('รายงาน', color: const Color(0xFF9C27B0)),
+      _BtnDef('โปรโมชั่น', color: const Color(0xFFFF6B00)),
+      _BtnDef('ช่วยเหลือ', color: const Color(0xFF795548)),
     ],
   ),
   _RichMenuTemplate(
@@ -213,7 +247,7 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                           borderRadius: BorderRadius.circular(14),
                           child: SizedBox(
                             width: 500,
-                            height: 500 * 843 / 2500,
+                            height: _selected.isLarge ? 500 * 1686 / 2500 : 500 * 843 / 2500,
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
@@ -278,9 +312,32 @@ class _TemplateOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (template.isLarge) {
+      // split buttons into 2 rows
+      final half = (template.buttons.length / 2).ceil();
+      final top = template.buttons.sublist(0, half);
+      final bottom = template.buttons.sublist(half);
+      return Column(
+        children: [
+          Expanded(child: _BtnRow(buttons: top)),
+          Container(height: 1, color: Colors.white24),
+          Expanded(child: _BtnRow(buttons: bottom)),
+        ],
+      );
+    }
+    return _BtnRow(buttons: template.buttons);
+  }
+}
+
+class _BtnRow extends StatelessWidget {
+  final List<_BtnDef> buttons;
+  const _BtnRow({required this.buttons});
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
-      children: template.buttons.asMap().entries.map((e) {
-        final isLast = e.key == template.buttons.length - 1;
+      children: buttons.asMap().entries.map((e) {
+        final isLast = e.key == buttons.length - 1;
         final btn = e.value;
         return Expanded(
           child: Container(

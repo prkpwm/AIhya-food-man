@@ -19,75 +19,56 @@ function getBlobClient(): messagingApi.MessagingApiBlobClient {
 
 // ─── Customer Rich Menu ───────────────────────────────────────────────────────
 
-export function buildCustomerMenu(shopName: string): RichMenuRequest {
-  return {
-    size: { width: 2500, height: 843 },
-    selected: true,
-    name: `${shopName} - Customer Menu`,
-    chatBarText: 'เมนูร้าน',
-    areas: [
-      {
-        bounds: { x: 0, y: 0, width: 833, height: 843 },
-        action: { type: 'message', label: 'ดูเมนู', text: 'เมนู' },
-      },
-      {
-        bounds: { x: 833, y: 0, width: 834, height: 843 },
-        action: { type: 'message', label: 'ออเดอร์ของฉัน', text: 'ดูตะกร้า' },
-      },
-      {
-        bounds: { x: 1667, y: 0, width: 833, height: 843 },
-        action: { type: 'message', label: 'โปรโมชั่น', text: 'โปรโมชั่น' },
-      },
-    ],
-  };
+export function buildCustomerMenu(shopName: string, large = false): RichMenuRequest {
+  const H = large ? 1686 : 843;
+  const areas = large ? [
+    { bounds: { x: 0,    y: 0,    width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'ดูเมนู',    text: 'เมนู' } },
+    { bounds: { x: 833,  y: 0,    width: 834,  height: H / 2 }, action: { type: 'message' as const, label: 'ออเดอร์',   text: 'ดูตะกร้า' } },
+    { bounds: { x: 1667, y: 0,    width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'โปรโมชั่น', text: 'โปรโมชั่น' } },
+    { bounds: { x: 0,    y: H/2,  width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'เมนูโปรด',  text: 'เมนูโปรด' } },
+    { bounds: { x: 833,  y: H/2,  width: 834,  height: H / 2 }, action: { type: 'message' as const, label: 'ดูตะกร้า', text: 'ดูตะกร้า' } },
+    { bounds: { x: 1667, y: H/2,  width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'ติดต่อร้าน', text: 'ติดต่อร้าน' } },
+  ] : [
+    { bounds: { x: 0,    y: 0, width: 833,  height: H }, action: { type: 'message' as const, label: 'ดูเมนู',    text: 'เมนู' } },
+    { bounds: { x: 833,  y: 0, width: 834,  height: H }, action: { type: 'message' as const, label: 'ออเดอร์',   text: 'ดูตะกร้า' } },
+    { bounds: { x: 1667, y: 0, width: 833,  height: H }, action: { type: 'message' as const, label: 'โปรโมชั่น', text: 'โปรโมชั่น' } },
+  ];
+  return { size: { width: 2500, height: H }, selected: true, name: `${shopName} - Customer Menu`, chatBarText: 'เมนูร้าน', areas };
 }
 
-// ─── Merchant Rich Menu ───────────────────────────────────────────────────────
-
-export function buildMerchantMenu(shopName: string): RichMenuRequest {
-  return {
-    size: { width: 2500, height: 843 },
-    selected: true,
-    name: `${shopName} - Merchant Menu`,
-    chatBarText: 'จัดการร้าน',
-    areas: [
-      {
-        bounds: { x: 0, y: 0, width: 625, height: 843 },
-        action: { type: 'message', label: 'ออเดอร์', text: 'ออเดอร์วันนี้' },
-      },
-      {
-        bounds: { x: 625, y: 0, width: 625, height: 843 },
-        action: { type: 'message', label: 'สต๊อก', text: 'สต๊อกวันนี้' },
-      },
-      {
-        bounds: { x: 1250, y: 0, width: 625, height: 843 },
-        action: { type: 'message', label: 'รายได้', text: 'สรุปรายได้' },
-      },
-      {
-        bounds: { x: 1875, y: 0, width: 625, height: 843 },
-        action: { type: 'message', label: 'เพิ่มเมนู', text: 'เพิ่มเมนู' },
-      },
-    ],
-  };
+export function buildMerchantMenu(shopName: string, large = false): RichMenuRequest {
+  const H = large ? 1686 : 843;
+  const areas = large ? [
+    { bounds: { x: 0,    y: 0,   width: 625, height: H / 2 }, action: { type: 'message' as const, label: 'ออเดอร์',   text: 'ออเดอร์วันนี้' } },
+    { bounds: { x: 625,  y: 0,   width: 625, height: H / 2 }, action: { type: 'message' as const, label: 'สต๊อก',     text: 'สต๊อกวันนี้' } },
+    { bounds: { x: 1250, y: 0,   width: 625, height: H / 2 }, action: { type: 'message' as const, label: 'รายได้',    text: 'สรุปรายได้' } },
+    { bounds: { x: 1875, y: 0,   width: 625, height: H / 2 }, action: { type: 'message' as const, label: 'เพิ่มเมนู', text: 'เพิ่มเมนู' } },
+    { bounds: { x: 0,    y: H/2, width: 625, height: H / 2 }, action: { type: 'message' as const, label: 'ตั้งค่า',   text: 'ตั้งค่า' } },
+    { bounds: { x: 625,  y: H/2, width: 625, height: H / 2 }, action: { type: 'message' as const, label: 'รายงาน',   text: 'รายงาน' } },
+    { bounds: { x: 1250, y: H/2, width: 625, height: H / 2 }, action: { type: 'message' as const, label: 'โปรโมชั่น', text: 'โปรโมชั่น' } },
+    { bounds: { x: 1875, y: H/2, width: 625, height: H / 2 }, action: { type: 'message' as const, label: 'ช่วยเหลือ', text: 'ช่วยเหลือ' } },
+  ] : [
+    { bounds: { x: 0,    y: 0, width: 625, height: H }, action: { type: 'message' as const, label: 'ออเดอร์',   text: 'ออเดอร์วันนี้' } },
+    { bounds: { x: 625,  y: 0, width: 625, height: H }, action: { type: 'message' as const, label: 'สต๊อก',     text: 'สต๊อกวันนี้' } },
+    { bounds: { x: 1250, y: 0, width: 625, height: H }, action: { type: 'message' as const, label: 'รายได้',    text: 'สรุปรายได้' } },
+    { bounds: { x: 1875, y: 0, width: 625, height: H }, action: { type: 'message' as const, label: 'เพิ่มเมนู', text: 'เพิ่มเมนู' } },
+  ];
+  return { size: { width: 2500, height: H }, selected: true, name: `${shopName} - Merchant Menu`, chatBarText: 'จัดการร้าน', areas };
 }
 
 // ─── Deploy ───────────────────────────────────────────────────────────────────
 
-export async function deployCustomerMenu(
-  shopName: string,
-  bgBuffer: Buffer
-): Promise<string> {
-  const menuRequest = buildCustomerMenu(shopName);
-  const image = await generateRichMenuImage(bgBuffer, customerAreas);
+export async function deployCustomerMenu(shopName: string, bgBuffer: Buffer, large = false): Promise<string> {
+  const menuRequest = buildCustomerMenu(shopName, large);
+  const H = large ? 1686 : 843;
+  const image = await generateRichMenuImage(bgBuffer, customerAreas(H), H);
   return _createAndDeploy(menuRequest, image);
 }
 
-export async function deployMerchantMenu(
-  shopName: string,
-  bgBuffer: Buffer
-): Promise<string> {
-  const menuRequest = buildMerchantMenu(shopName);
-  const image = await generateRichMenuImage(bgBuffer, merchantAreas);
+export async function deployMerchantMenu(shopName: string, bgBuffer: Buffer, large = false): Promise<string> {
+  const menuRequest = buildMerchantMenu(shopName, large);
+  const H = large ? 1686 : 843;
+  const image = await generateRichMenuImage(bgBuffer, merchantAreas(H), H);
   return _createAndDeploy(menuRequest, image);
 }
 

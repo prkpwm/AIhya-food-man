@@ -42,8 +42,9 @@ router.post('/deploy/customer', upload.single('image'), async (req: Request, res
       return;
     }
 
-    const menuRequest = richMenuService.buildCustomerMenu(shopName);
-    console.table({ step: 'deploy-customer', action: 'menu-built', areas: menuRequest.areas?.length ?? 0 });
+    const large = req.body['large'] === 'true';
+    const menuRequest = richMenuService.buildCustomerMenu(shopName, large);
+    console.table({ step: 'deploy-customer', action: 'menu-built', areas: menuRequest.areas?.length ?? 0, large });
 
     const richMenuId = await richMenuService.deployCustomerMenu(shopName, file.buffer);
     console.table({ step: 'deploy-customer', action: 'done', richMenuId });
@@ -79,8 +80,9 @@ router.post('/deploy/merchant', upload.single('image'), async (req: Request, res
       return;
     }
 
-    const menuRequest = richMenuService.buildMerchantMenu(shopName);
-    console.table({ step: 'deploy-merchant', action: 'menu-built', areas: menuRequest.areas?.length ?? 0 });
+    const large = req.body['large'] === 'true';
+    const menuRequest = richMenuService.buildMerchantMenu(shopName, large);
+    console.table({ step: 'deploy-merchant', action: 'menu-built', areas: menuRequest.areas?.length ?? 0, large });
 
     const richMenuId = await richMenuService.deployMerchantMenu(shopName, file.buffer);
     console.table({ step: 'deploy-merchant', action: 'done', richMenuId });
