@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,7 +15,7 @@ class RichMenuScreen extends ConsumerStatefulWidget {
 class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
   final _shopNameCtrl = TextEditingController(text: 'ร้านข้าวผัดแม่มาลี');
   String? _imageBase64;
-  String? _imagePath;
+  Uint8List? _imageBytes;
   bool _isCustomer = true;
 
   @override
@@ -28,10 +28,10 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
     if (file == null) return;
-    final bytes = await File(file.path).readAsBytes();
+    final bytes = await file.readAsBytes();
     setState(() {
       _imageBase64 = base64Encode(bytes);
-      _imagePath = file.path;
+      _imageBytes = bytes;
     });
   }
 
@@ -118,10 +118,10 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.grey.shade300),
                               ),
-                              child: _imagePath != null
+                              child: _imageBytes != null
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
-                                      child: Image.file(File(_imagePath!), fit: BoxFit.cover),
+                                      child: Image.memory(_imageBytes!, fit: BoxFit.cover),
                                     )
                                   : const Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
