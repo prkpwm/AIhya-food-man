@@ -37,9 +37,13 @@ class ApiService {
   }
 
   Future<List<dynamic>> listRichMenus() async {
-    final res = await _dio.get('/rich-menu');
-    final data = res.data as Map<String, dynamic>;
-    return data['data'] as List<dynamic>;
+    try {
+      final res = await _dio.get('/rich-menu');
+      final data = res.data as Map<String, dynamic>;
+      return data['data'] as List<dynamic>;
+    } on DioException {
+      return [];
+    }
   }
 
   Future<void> deleteRichMenu(String richMenuId) async {
