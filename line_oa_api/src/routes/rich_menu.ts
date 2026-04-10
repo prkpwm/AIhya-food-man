@@ -49,9 +49,8 @@ router.post('/deploy/customer', async (req: Request, res: Response, next: NextFu
       const client = new messagingApi.MessagingApiClient({ channelAccessToken: env.line.channelAccessToken });
       const { richMenuId } = await client.createRichMenu(menuRequest);
       console.table({ step: 'deploy-customer', action: 'created', richMenuId });
-      await client.setDefaultRichMenu(richMenuId);
-      console.table({ step: 'deploy-customer', action: 'set-default', richMenuId });
-      res.json({ success: true, data: { richMenuId } });
+      // NOTE: cannot setDefaultRichMenu without image — LINE requires image first
+      res.json({ success: true, data: { richMenuId, warning: 'Image required to set as default' } });
       return;
     }
 
@@ -102,9 +101,8 @@ router.post('/deploy/merchant', async (req: Request, res: Response, next: NextFu
       const client = new messagingApi.MessagingApiClient({ channelAccessToken: env.line.channelAccessToken });
       const { richMenuId } = await client.createRichMenu(menuRequest);
       console.table({ step: 'deploy-merchant', action: 'created', richMenuId });
-      await client.setDefaultRichMenu(richMenuId);
-      console.table({ step: 'deploy-merchant', action: 'set-default', richMenuId });
-      res.json({ success: true, data: { richMenuId } });
+      // NOTE: cannot setDefaultRichMenu without image — LINE requires image first
+      res.json({ success: true, data: { richMenuId, warning: 'Image required to set as default' } });
       return;
     }
 

@@ -38,7 +38,7 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
 
   Future<void> _deploy() async {
     if (_imageBase64 == null) {
-      _showSnack('กรุณาเลือกรูปภาพก่อน');
+      _showSnack('กรุณาเลือกรูปภาพก่อน (ขนาด 2500×843 px)');
       return;
     }
     final notifier = ref.read(richMenuProvider.notifier);
@@ -129,7 +129,9 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
                                       children: [
                                         Icon(Icons.image_outlined, size: 36, color: Color(0xFF9E9E9E)),
                                         SizedBox(height: 8),
-                                        Text('เลือกรูป Rich Menu (2500×843)', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
+                                        Text('เลือกรูป Rich Menu', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
+                                        SizedBox(height: 4),
+                                        Text('ต้องเป็น 2500×843 px (JPEG/PNG)', style: TextStyle(color: Color(0xFFF44336), fontSize: 11)),
                                       ],
                                     ),
                             ),
