@@ -22,6 +22,18 @@ export const DAILY_LIMIT: Record<SubscriptionTier, number> = {
   platinum: -1,
 };
 
+export interface MenuAddon {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface MenuPortionOption {
+  id: string;
+  name: string;
+  extraPrice: number;
+}
+
 // ─── Menu ─────────────────────────────────────────────────────────────────────
 
 export interface Menu {
@@ -36,6 +48,8 @@ export interface Menu {
   maxSpiceLevel: number;
   ingredientIds: string[];
   isAvailable: boolean;
+  addons?: MenuAddon[];           // optional top-ups (checkboxes, multi-select)
+  portionOptions?: MenuPortionOption[]; // optional portion types (radio, single-select)
 }
 
 export type ShopType = 'streetFood' | 'restaurant' | 'buffet';

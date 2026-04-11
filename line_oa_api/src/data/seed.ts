@@ -44,6 +44,8 @@ export function seedData(): void {
       price: 60, maxSpiceLevel: 5, isAvailable: true,
       imageUrl: imageUrl('menu-001', 'https://images.openai.com/static-rsc-4/b4C5IE7Tpv_Ep7wnqXD7HypX6DpTnb3pEI1EBW9KQgV_kR-gKYq7y8gzTU3pwsIpVi127pZ2XEtfkLNaWTk4_0AXBcPjUCLeyc99iGMV8zvD-QINZjo1uOAdsubyYvYzI4aVsfp92u9k99GAl07KHHbLbEHuS0mY8rp1lpIc7c9mvCXF51G01BWaOlM1AEI8?purpose=inline'),
       ingredientIds: ['ing-001', 'ing-007', 'ing-011'],
+      addons: [{ id: 'egg', name: 'ไข่ดาว', price: 12 }, { id: 'extra-meat', name: 'เพิ่มเนื้อ', price: 15 }],
+      portionOptions: [{ id: 'normal', name: 'ธรรมดา', extraPrice: 0 }, { id: 'special', name: 'พิเศษ', extraPrice: 10 }],
     },
     {
       merchantId: MERCHANT_ID, name: 'กระเพราไก่', category: 'กระเพรา', shopType: 'streetFood',
@@ -51,6 +53,8 @@ export function seedData(): void {
       price: 60, maxSpiceLevel: 5, isAvailable: true,
       imageUrl: imageUrl('menu-002', 'https://images.openai.com/static-rsc-4/RxTk3sZohYoPdvwvzm_D-s9T6AhC18rTzgsPmwkkaxwezuGcxQv6EtVdqLy_kl1ElksSe2WxVaJkmwx2A5k7RFa9qOa5Ur2UNnQRuuz5wYl-M3N66mKPdMukEDpK7fuSzA7zRmQALtOYyfYT4P6OzJSoIOMxBdxZzZeAOTb5HQq5uZJLud7g0zExkKDLog7O?purpose=inline'),
       ingredientIds: ['ing-005', 'ing-007', 'ing-011'],
+      addons: [{ id: 'egg', name: 'ไข่ดาว', price: 12 }, { id: 'extra-meat', name: 'เพิ่มเนื้อ', price: 15 }],
+      portionOptions: [{ id: 'normal', name: 'ธรรมดา', extraPrice: 0 }, { id: 'special', name: 'พิเศษ', extraPrice: 10 }],
     },
     {
       merchantId: MERCHANT_ID, name: 'กระเพรากุ้ง', category: 'กระเพรา', shopType: 'streetFood',
