@@ -10,15 +10,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .header h1{font-size:20px;font-weight:700}
 .header p{font-size:13px;color:#999;margin-top:2px}
 .menu-list{padding:12px 16px;display:flex;flex-direction:column;gap:10px}
-.menu-card{background:#fff;border-radius:16px;display:flex;align-items:center;gap:12px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer}
+.menu-card{background:#fff;border-radius:16px;display:flex;align-items:center;gap:12px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;position:relative}
 .menu-card img,.no-img{width:72px;height:72px;border-radius:12px;object-fit:cover;flex-shrink:0;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:28px}
 .menu-info{flex:1;min-width:0}
 .menu-name{font-weight:600;font-size:15px}
 .menu-desc{font-size:12px;color:#999;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .menu-price{font-size:15px;font-weight:700;color:#FF6B00;margin-top:4px}
 .add-btn{width:32px;height:32px;border-radius:50%;background:#FF6B00;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer}
+.cart-badge{position:absolute;top:-6px;right:-6px;background:#FF6B00;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .footer{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:12px 16px;border-top:1px solid #eee;display:flex;align-items:center;gap:12px}
-.cart-summary{flex:1;font-size:14px;color:#555}
+.cart-summary{flex:1;font-size:14px;color:#555;cursor:pointer;padding:4px 0}
 .cart-count{font-weight:700;color:#FF6B00}
 .checkout-btn{padding:12px 24px;background:#FF6B00;color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer}
 .checkout-btn:disabled{background:#ccc}
@@ -51,6 +52,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .add-cart-btn{width:100%;padding:16px;background:#06C755;color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;margin-bottom:8px}
 .note-input{width:100%;padding:10px 14px;border:1.5px solid #eee;border-radius:12px;font-size:14px;margin-top:8px;outline:none;background:#fafafa}
 .note-input:focus{border-color:#FF6B00}
+.cart-item-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f5f5f5}
+.cart-item-info{flex:1;min-width:0}
+.cart-item-name{font-size:14px;font-weight:600}
+.cart-item-note{font-size:12px;color:#999;margin-top:2px}
+.cart-item-price{font-size:14px;font-weight:700;color:#FF6B00;white-space:nowrap}
+.cart-item-qty{display:flex;align-items:center;gap:8px}
+.cart-qty-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid #ddd;background:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cart-qty-num{font-size:14px;font-weight:700;min-width:18px;text-align:center}
+.cart-total-row{display:flex;justify-content:space-between;padding:16px 0;font-weight:700;font-size:16px}
+.cart-total-price{color:#FF6B00}
+.cart-checkout-btn{width:100%;padding:16px;background:#FF6B00;color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:8px}
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap}
 .toast.show{opacity:1}
 `;
@@ -92,7 +104,7 @@ export default function OrderWebPage() {
         </div>
         <div className="menu-list" dangerouslySetInnerHTML={{ __html: menuCards }} />
         <div className="footer">
-          <div className="cart-summary">
+          <div className="cart-summary" id="cart-bar">
             ตะกร้า: <span className="cart-count" id="cart-count">0</span> รายการ · <span id="cart-total">฿0</span>
           </div>
           <button className="checkout-btn" id="checkout-btn" disabled>สั่งอาหาร</button>
@@ -101,12 +113,19 @@ export default function OrderWebPage() {
         <div className="sheet" id="sheet">
           <div id="sheet-content" />
         </div>
+        {/* cart review sheet */}
+        <div className="overlay" id="cart-overlay" />
+        <div className="sheet" id="cart-sheet">
+          <div id="cart-content" />
+        </div>
         <div className="toast" id="toast" />
         <script dangerouslySetInnerHTML={{ __html: `window.__MENUS__ = ${menusJson};` }} />
         <script src="/order-web-app.js" />
         <script dangerouslySetInnerHTML={{ __html: `
           document.getElementById('overlay').addEventListener('click', closeSheet);
+          document.getElementById('cart-overlay').addEventListener('click', closeCartSheet);
           document.getElementById('checkout-btn').addEventListener('click', checkout);
+          document.getElementById('cart-bar').addEventListener('click', openCartSheet);
         ` }} />
       </body>
     </html>

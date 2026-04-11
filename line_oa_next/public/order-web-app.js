@@ -18,6 +18,8 @@ async function initLiff() {
   } catch(e) {}
 }
 
+// ─── Menu detail sheet ────────────────────────────────────────────────────────
+
 function openDetail(menuId) {
   currentMenu = MENUS.find(function(m) { return m.id === menuId; });
   if (!currentMenu) return;
@@ -158,8 +160,60 @@ function addToCart() {
   cart.push({ menuId: m.id, menuName: m.name, quantity: sheetQty, unitPrice: unitPrice, spiceLevel: sheetSpice, customNote: note });
   closeSheet();
   updateCartBar();
+  updateMenuBadges();
   showToast('เพิ่ม ' + m.name + ' x' + sheetQty + ' แล้ว');
 }
+
+// ─── Cart review sheet ────────────────────────────────────────────────────────
+
+function openCartSheet() {
+  if (cart.length === 0) return;
+  renderCartSheet();
+  document.getElementById('cart-overlay').classList.add('show');
+  document.getElementById('cart-sheet').classList.add('show');
+}
+
+function closeCartSheet() {
+  document.getElementById('cart-overlay').classList.remove('show');
+  document.getElementById('cart-sheet').classList.remove('show');
+}
+
+function renderCartSheet() {
+  var total = cart.reduce(function(s, i) { return s + i.unitPrice * i.quantity; }, 0);
+  var rows = cart.map(function(item, idx) {
+    return '<div class="cart-item-row">'
+      + '<div class="cart-item-info">'
+      + '<div class="cart-item-name">' + item.menuName + '</div>'
+      + (item.customNote ? '<div class="cart-item-note">' + item.customNote + '</div>' : '')
+      + '</div>'
+      + '<div class="cart-item-qty">'
+      + '<button class="cart-qty-btn" data-idx="' + idx + '" onclick="cartChangeQty(parseInt(this.dataset.idx),-1)">−</button>'
+      + '<span class="cart-qty-num">' + item.quantity + '</span>'
+      + '<button class="cart-qty-btn" data-idx="' + idx + '" onclick="cartChangeQty(parseInt(this.dataset.idx),1)">+</button>'
+      + '</div>'
+      + '<div class="cart-item-price">฿' + (item.unitPrice * item.quantity).toFixed(0) + '</div>'
+      + '</div>';
+  }).join('');
+
+  document.getElementById('cart-content').innerHTML = '<div style="padding:20px">'
+    + '<div style="font-size:18px;font-weight:700;margin-bottom:16px">🛒 ตะกร้าของคุณ</div>'
+    + rows
+    + '<div class="cart-total-row"><span>ยอดรวม</span><span class="cart-total-price">฿' + total.toFixed(0) + '</span></div>'
+    + '<button class="cart-checkout-btn" onclick="closeCartSheet();checkout()">ยืนยันสั่งอาหาร · ฿' + total.toFixed(0) + '</button>'
+    + '</div>';
+}
+
+function cartChangeQty(idx, delta) {
+  if (idx < 0 || idx >= cart.length) return;
+  cart[idx].quantity = Math.max(0, cart[idx].quantity + delta);
+  if (cart[idx].quantity === 0) cart.splice(idx, 1);
+  updateCartBar();
+  updateMenuBadges();
+  if (cart.length === 0) { closeCartSheet(); return; }
+  renderCartSheet();
+}
+
+// ─── Cart bar & badges ────────────────────────────────────────────────────────
 
 function updateCartBar() {
   var count = cart.reduce(function(s, i) { return s + i.quantity; }, 0);
@@ -168,6 +222,32 @@ function updateCartBar() {
   document.getElementById('cart-total').textContent = '฿' + total.toFixed(0);
   document.getElementById('checkout-btn').disabled = count === 0;
 }
+
+function updateMenuBadges() {
+  // count qty per menuId
+  var qtyMap = {};
+  cart.forEach(function(i) { qtyMap[i.menuId] = (qtyMap[i.menuId] || 0) + i.quantity; });
+  // update badges on add-btn
+  document.querySelectorAll('.add-btn').forEach(function(btn) {
+    var menuId = btn.dataset.menuid;
+    var existing = btn.querySelector('.cart-badge');
+    var qty = qtyMap[menuId] || 0;
+    if (qty > 0) {
+      if (!existing) {
+        var badge = document.createElement('span');
+        badge.className = 'cart-badge';
+        btn.style.position = 'relative';
+        btn.appendChild(badge);
+        existing = badge;
+      }
+      existing.textContent = qty;
+    } else if (existing) {
+      existing.remove();
+    }
+  });
+}
+
+// ─── Checkout ─────────────────────────────────────────────────────────────────
 
 async function checkout() {
   if (cart.length === 0) return;
