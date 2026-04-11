@@ -1,21 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
+import { pushLog } from '../index';
 
 export function traceMiddleware(req: Request, res: Response, next: NextFunction): void {
   const start = Date.now();
   const { method, url, body, query } = req;
 
-  // log request
-  console.table({
+  const reqBody = method !== 'GET' && body && Object.keys(body).length
+    ? JSON.stringify(body)
+    : undefined;
+
+  pushLog({
+    ts: new Date().toISOString(),
     dir: '→ REQ',
     method,
     url,
-    query: Object.keys(query).length ? JSON.stringify(query) : '-',
-    body: method !== 'GET' && body && Object.keys(body).length
-      ? JSON.stringify(body)
-      : '-',
+    query: Object.keys(query).length ? JSON.stringify(query) : undefined,
+    body: reqBody,
   });
 
-  // intercept response body
+  console.table({ dir: '→ REQ', method, url, query: query ?? '-', body: reqBody ?? '-' });
+
   const chunks: Buffer[] = [];
   const originalWrite = res.write.bind(res);
   const originalEnd = res.end.bind(res);
@@ -36,14 +40,11 @@ export function traceMiddleware(req: Request, res: Response, next: NextFunction)
     let parsedBody: unknown = responseBody;
     try { parsedBody = JSON.parse(responseBody); } catch { /* keep as string */ }
 
-    console.table({
-      dir: '← RES',
-      method,
-      url,
-      status: res.statusCode,
-      ms: Date.now() - start,
-      body: JSON.stringify(parsedBody),
-    });
+    const ms = Date.now() - start;
+    const bodyStr = JSON.stringify(parsedBody);
+
+    pushLog({ ts: new Date().toISOString(), dir: '← RES', method, url, status: res.statusCode, ms, body: bodyStr });
+    console.table({ dir: '← RES', method, url, status: res.statusCode, ms, body: bodyStr });
 
     return (originalEnd as (...a: unknown[]) => Response)(chunk, ...args);
   };

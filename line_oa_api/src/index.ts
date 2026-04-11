@@ -15,6 +15,28 @@ import { seedData } from './data/seed';
 
 const app = express();
 
+// ─── In-memory log store ──────────────────────────────────────────────────────
+
+interface LogEntry {
+  ts: string;
+  dir: string;
+  method: string;
+  url: string;
+  status?: number;
+  ms?: number;
+  query?: string;
+  body?: string;
+}
+
+const logs: LogEntry[] = [];
+const MAX_LOGS = 500;
+
+export function pushLog(entry: LogEntry): void {
+  logs.unshift(entry);
+  if (logs.length > MAX_LOGS) logs.pop();
+}
+
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(cors());
@@ -29,6 +51,8 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
+
+app.get('/logs', (_req, res) => res.json({ count: logs.length, logs }));
 
 if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
   const keepAliveUrl = `${process.env.RENDER_EXTERNAL_URL}/health`;
