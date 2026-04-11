@@ -98,9 +98,11 @@ class ApiService {
     required String shopName,
     required Uint8List imageBytes,
     String imageType = 'image/png',
+    bool large = false,
   }) async {
     final form = FormData.fromMap({
       'shopName': shopName,
+      'large': large.toString(),
       'image': MultipartFile.fromBytes(imageBytes, filename: 'rich_menu.png', contentType: DioMediaType.parse(imageType)),
     });
     final res = await _dio.post('/rich-menu/deploy/customer', data: form);
@@ -111,9 +113,11 @@ class ApiService {
     required String shopName,
     required Uint8List imageBytes,
     String imageType = 'image/png',
+    bool large = false,
   }) async {
     final form = FormData.fromMap({
       'shopName': shopName,
+      'large': large.toString(),
       'image': MultipartFile.fromBytes(imageBytes, filename: 'rich_menu.png', contentType: DioMediaType.parse(imageType)),
     });
     final res = await _dio.post('/rich-menu/deploy/merchant', data: form);

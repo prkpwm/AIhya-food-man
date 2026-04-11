@@ -35,12 +35,12 @@ final _templates = [
   _RichMenuTemplate(
     id: 'customer-basic',
     name: 'ลูกค้า — พื้นฐาน (ครึ่งหน้าจอ)',
-    description: '3 ปุ่ม: ดูเมนู / ออเดอร์ / โปรโมชั่น',
+    description: '3 ปุ่ม: สั่งอาหาร / ติดตามสถานะ / โปรโมชั่น',
     isCustomer: true,
     buttons: [
-      _BtnDef('ดูเมนู', color: const Color(0xFF06C755)),
-      _BtnDef('ออเดอร์', color: const Color(0xFF1A1A1A)),
-      _BtnDef('โปรโมชั่น', color: const Color(0xFFFF6B00)),
+      _BtnDef('สั่งอาหาร', color: const Color(0xFFFF6B00)),
+      _BtnDef('ติดตามสถานะ', color: const Color(0xFF1A1A1A)),
+      _BtnDef('โปรโมชั่น', color: const Color(0xFF06C755)),
     ],
   ),
   _RichMenuTemplate(
@@ -50,9 +50,9 @@ final _templates = [
     isCustomer: true,
     isLarge: true,
     buttons: [
-      _BtnDef('ดูเมนู', color: const Color(0xFF06C755)),
-      _BtnDef('ออเดอร์', color: const Color(0xFF1A1A1A)),
-      _BtnDef('โปรโมชั่น', color: const Color(0xFFFF6B00)),
+      _BtnDef('สั่งอาหาร', color: const Color(0xFFFF6B00)),
+      _BtnDef('ติดตามสถานะ', color: const Color(0xFF1A1A1A)),
+      _BtnDef('โปรโมชั่น', color: const Color(0xFF06C755)),
       _BtnDef('เมนูโปรด', color: const Color(0xFF9C27B0)),
       _BtnDef('ดูตะกร้า', color: const Color(0xFF2196F3)),
       _BtnDef('ติดต่อร้าน', color: const Color(0xFF607D8B)),
@@ -64,9 +64,9 @@ final _templates = [
     description: '3 ปุ่ม สไตล์มืด',
     isCustomer: true,
     buttons: [
-      _BtnDef('🍽️ เมนู', color: const Color(0xFF2C2C2C)),
-      _BtnDef('📦 ออเดอร์', color: const Color(0xFF2C2C2C)),
-      _BtnDef('🎁 โปร', color: const Color(0xFF2C2C2C)),
+      _BtnDef('🛒 สั่งอาหาร', color: const Color(0xFF2C2C2C)),
+      _BtnDef('📦 ติดตามสถานะ', color: const Color(0xFF2C2C2C)),
+      _BtnDef('🎁 โปรโมชั่น', color: const Color(0xFF2C2C2C)),
     ],
   ),
   _RichMenuTemplate(
@@ -75,8 +75,8 @@ final _templates = [
     description: '3 ปุ่ม สไตล์ mint',
     isCustomer: true,
     buttons: [
-      _BtnDef('เมนู', color: const Color(0xFF7ECEC4)),
-      _BtnDef('ออเดอร์', color: const Color(0xFF7ECEC4)),
+      _BtnDef('สั่งอาหาร', color: const Color(0xFF7ECEC4)),
+      _BtnDef('ติดตามสถานะ', color: const Color(0xFF7ECEC4)),
       _BtnDef('โปรโมชั่น', color: const Color(0xFF7ECEC4)),
     ],
   ),
@@ -157,8 +157,8 @@ class _RichMenuScreenState extends ConsumerState<RichMenuScreen> {
     }
     final notifier = ref.read(richMenuProvider.notifier);
     final id = _selected.isCustomer
-        ? await notifier.deployCustomer(_shopNameCtrl.text.trim(), _imageBytes!)
-        : await notifier.deployMerchant(_shopNameCtrl.text.trim(), _imageBytes!);
+        ? await notifier.deployCustomer(_shopNameCtrl.text.trim(), _imageBytes!, large: _selected.isLarge)
+        : await notifier.deployMerchant(_shopNameCtrl.text.trim(), _imageBytes!, large: _selected.isLarge);
     if (id != null && mounted) _showSnack('Deploy สำเร็จ! ID: $id');
   }
 

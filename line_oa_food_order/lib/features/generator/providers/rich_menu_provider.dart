@@ -8,12 +8,13 @@ class RichMenuNotifier extends AsyncNotifier<List<dynamic>> {
   @override
   Future<List<dynamic>> build() => ref.read(apiServiceProvider).listRichMenus();
 
-  Future<String?> deployCustomer(String shopName, Uint8List imageBytes) async {
+  Future<String?> deployCustomer(String shopName, Uint8List imageBytes, {bool large = false}) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() async {
       final res = await ref.read(apiServiceProvider).deployCustomerMenu(
             shopName: shopName,
             imageBytes: imageBytes,
+            large: large,
           );
       await refresh();
       return res['data']['richMenuId'] as String;
@@ -22,12 +23,13 @@ class RichMenuNotifier extends AsyncNotifier<List<dynamic>> {
     return result.valueOrNull;
   }
 
-  Future<String?> deployMerchant(String shopName, Uint8List imageBytes) async {
+  Future<String?> deployMerchant(String shopName, Uint8List imageBytes, {bool large = false}) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() async {
       final res = await ref.read(apiServiceProvider).deployMerchantMenu(
             shopName: shopName,
             imageBytes: imageBytes,
+            large: large,
           );
       await refresh();
       return res['data']['richMenuId'] as String;
