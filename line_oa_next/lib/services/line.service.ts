@@ -3,16 +3,32 @@ import { Order } from '../types';
 
 type LineMessage = Parameters<line.messagingApi.MessagingApiClient['pushMessage']>[0]['messages'][number];
 
+const LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply';
+const LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push';
+const LINE_BROADCAST_URL = 'https://api.line.me/v2/bot/message/broadcast';
+
+function authHeader(accessToken: string) {
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` };
+}
+
 function getClient(accessToken: string) {
   return new line.messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
 }
 
 export async function pushMessage(accessToken: string, userId: string, messages: LineMessage[]) {
-  return getClient(accessToken).pushMessage({ to: userId, messages });
+  return fetch(LINE_PUSH_URL, {
+    method: 'POST',
+    headers: authHeader(accessToken),
+    body: JSON.stringify({ to: userId, messages }),
+  });
 }
 
 export async function replyMessage(accessToken: string, replyToken: string, messages: LineMessage[]) {
-  return getClient(accessToken).replyMessage({ replyToken, messages });
+  return fetch(LINE_REPLY_URL, {
+    method: 'POST',
+    headers: authHeader(accessToken),
+    body: JSON.stringify({ replyToken, messages }),
+  });
 }
 
 export async function pushOrderStatus(accessToken: string, userId: string, order: Order) {
@@ -24,9 +40,13 @@ export async function pushOrderStatus(accessToken: string, userId: string, order
 }
 
 export async function broadcastFlex(accessToken: string, flex: unknown) {
-  return getClient(accessToken).broadcast({ messages: [flex as LineMessage] });
+  return fetch(LINE_BROADCAST_URL, {
+    method: 'POST',
+    headers: authHeader(accessToken),
+    body: JSON.stringify({ messages: [flex] }),
+  });
 }
 
 export async function pushFlex(accessToken: string, userId: string, flex: unknown) {
-  return getClient(accessToken).pushMessage({ to: userId, messages: [flex as LineMessage] });
+  return pushMessage(accessToken, userId, [flex as LineMessage]);
 }
