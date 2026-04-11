@@ -54,7 +54,7 @@ export default function OrderWebPage() {
           </div>
           <div className="search-bar">
             <span className="search-icon">🔍</span>
-            <input id="search-input" type="text" placeholder="ค้นหาเมนู..." oninput="searchMenus(this.value)" />
+            <input id="search-input" type="text" placeholder="ค้นหาเมนู..." />
           </div>
           <div className="cat-tabs" id="cat-tabs" dangerouslySetInnerHTML={{ __html: catTabs }} />
         </div>
@@ -63,7 +63,7 @@ export default function OrderWebPage() {
         <div className="menu-grid" id="menu-grid" dangerouslySetInnerHTML={{ __html: menuCards }} />
 
         {/* ── Cart bar ── */}
-        <div className="cart-bar" id="cart-bar" style={{ display: 'none' }} onClick={() => {}}>
+        <div className="cart-bar" id="cart-bar" style={{ display: 'none' }}>
           <div className="cart-bar-left">
             <span className="cart-bar-count" id="cart-count">0</span>
             <span className="cart-bar-label">รายการ</span>
@@ -85,6 +85,7 @@ export default function OrderWebPage() {
           document.getElementById('overlay').addEventListener('click', closeSheet);
           document.getElementById('cart-overlay').addEventListener('click', closeCartSheet);
           document.getElementById('cart-bar').addEventListener('click', openCartSheet);
+          document.getElementById('search-input').addEventListener('input', function() { searchMenus(this.value); });
         ` }} />
       </body>
     </html>
