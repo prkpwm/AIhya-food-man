@@ -8,7 +8,7 @@ ensureInit();
 export const dynamic = 'force-dynamic';
 
 export function GET() {
-  const menus = getMenusByMerchant('merchant-001').filter((m) => m.isAvailable);
+  const menus = getMenusByMerchant('merchant-001');
   const html = buildOrderWebHtml(menus);
   return new NextResponse(html, {
     headers: { 'Content-Type': 'text/html; charset=utf-8' },

@@ -7,15 +7,20 @@ export function buildOrderWebHtml(menus: Menu[]): string {
     id: m.id, name: m.name, description: m.description,
     price: m.price, imageUrl: m.imageUrl, maxSpiceLevel: m.maxSpiceLevel,
     category: m.category, addons: m.addons ?? [], portionOptions: m.portionOptions ?? [],
+    isAvailable: m.isAvailable,
   })));
 
   const menuCards = menus.map((m) => {
     const img = m.imageUrl
       ? `<img src="${m.imageUrl}" alt="${m.name}" loading="lazy"/>`
       : '<div class="no-img">🍽️</div>';
-    return `<div class="menu-card" data-menuid="${m.id}" data-category="${m.category}" onclick="openDetail(this.dataset.menuid)">
+    const soldOutOverlay = !m.isAvailable
+      ? '<div class="sold-out-overlay">หมด</div>'
+      : '';
+    return `<div class="menu-card${!m.isAvailable ? ' sold-out' : ''}" data-menuid="${m.id}" data-category="${m.category}" data-available="${m.isAvailable}" onclick="openDetail(this.dataset.menuid)">
       <div class="menu-card-img-wrap">
         ${img}
+        ${soldOutOverlay}
         <div class="menu-badge" id="badge-${m.id}" style="display:none">0</div>
       </div>
       <div class="menu-card-body">
@@ -23,7 +28,7 @@ export function buildOrderWebHtml(menus: Menu[]): string {
         <div class="menu-desc">${m.description}</div>
         <div class="menu-card-footer">
           <span class="menu-price">฿${m.price.toFixed(0)}</span>
-          <button class="add-btn" data-menuid="${m.id}" onclick="event.stopPropagation();openDetail(this.dataset.menuid)">+</button>
+          <button class="add-btn${!m.isAvailable ? ' add-btn-disabled' : ''}" data-menuid="${m.id}" onclick="event.stopPropagation();openDetail(this.dataset.menuid)" ${!m.isAvailable ? 'disabled' : ''}>+</button>
         </div>
       </div>
     </div>`;
@@ -45,7 +50,7 @@ export function buildOrderWebHtml(menus: Menu[]): string {
 </head>
 <body>
   <div class="header">
-    <div class="header-top"><div class="shop-name">🍽️ สั่งอาหาร</div></div>
+    <div class="header-top"><div class="shop-name">🍽️ สั่งอาหาร</div><button class="sold-out-toggle" id="sold-out-toggle" onclick="toggleSoldOut()">ซ่อนหมด</button></div>
     <div class="search-bar">
       <span class="search-icon">🔍</span>
       <input id="search-input" type="text" placeholder="ค้นหาเมนู..."/>
@@ -167,4 +172,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .cart-checkout-btn{width:100%;padding:16px;background:#FF6B00;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer}
 .toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1}
+.sold-out-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;border-radius:0;letter-spacing:.5px}
+.menu-card.sold-out{opacity:.75}
+.add-btn-disabled{background:#ccc !important;cursor:not-allowed !important}
+.sold-out-toggle{font-size:12px;font-weight:600;padding:5px 12px;border-radius:50px;border:1.5px solid #e0e0e0;background:#fff;color:#555;cursor:pointer;flex-shrink:0}
+.sold-out-toggle.hiding{background:#1A1A1A;border-color:#1A1A1A;color:#fff}
 `;

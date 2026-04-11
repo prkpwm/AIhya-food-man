@@ -8,6 +8,7 @@ var sheetAddons = {};
 var sheetPortion = null;
 var sheetNote = '';
 var currentCat = 'all';
+var hideSoldOut = false;
 
 // ─── LIFF init ────────────────────────────────────────────────────────────────
 
@@ -38,11 +39,13 @@ function applyFilter(q) {
   var query = (q || '').toLowerCase().trim();
   document.querySelectorAll('.menu-card').forEach(function(card) {
     var cat = card.dataset.category;
+    var available = card.dataset.available === 'true';
     var name = card.querySelector('.menu-name').textContent.toLowerCase();
     var desc = card.querySelector('.menu-desc').textContent.toLowerCase();
     var catMatch = currentCat === 'all' || cat === currentCat;
     var searchMatch = !query || name.includes(query) || desc.includes(query);
-    card.style.display = (catMatch && searchMatch) ? '' : 'none';
+    var soldOutHidden = hideSoldOut && !available;
+    card.style.display = (catMatch && searchMatch && !soldOutHidden) ? '' : 'none';
   });
 }
 
@@ -51,6 +54,7 @@ function applyFilter(q) {
 function openDetail(menuId) {
   currentMenu = MENUS.find(function(m) { return m.id === menuId; });
   if (!currentMenu) return;
+  if (!currentMenu.isAvailable) return;
   sheetQty = 1;
   sheetSpice = currentMenu.maxSpiceLevel > 0 ? -1 : 0;
   sheetAddons = {};
@@ -310,6 +314,17 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+function toggleSoldOut() {
+  hideSoldOut = !hideSoldOut;
+  var btn = document.getElementById('sold-out-toggle');
+  if (btn) {
+    btn.textContent = hideSoldOut ? 'แสดงหมด' : 'ซ่อนหมด';
+    if (hideSoldOut) btn.classList.add('hiding');
+    else btn.classList.remove('hiding');
+  }
+  applyFilter(document.getElementById('search-input').value);
 }
 
 initLiff();
