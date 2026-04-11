@@ -148,41 +148,40 @@ router.get('/', (_req: Request, res: Response): void => {
       const total = (m.price * sheetQty).toFixed(0);
       const spiceLabels = ['ไม่เผ็ด','เผ็ดน้อย','เผ็ดกลาง','เผ็ดมาก','เผ็ดมากกก'];
 
-      const spiceOptions = m.maxSpiceLevel > 0 ? \`
-        <div class="section">
-          <div class="section-title">ระดับความเผ็ด</div>
-          <div class="section-sub">กรุณาเลือก 1 ข้อ · ต้องระบุ</div>
-          \${Array.from({length: m.maxSpiceLevel + 1}, (_, i) => \`
-            <div class="option-row" onclick="selectSpice(\${i})">
-              <div class="option-left">
-                <div class="radio \${sheetSpice === i ? 'sel' : ''}" id="spice-\${i}"></div>
-                <span class="option-label">\${spiceLabels[i] || 'เผ็ด '+i}</span>
-              </div>
-              <span class="option-price">฿0</span>
-            </div>\`).join('')}
-        </div>` : '';
+      let spiceHtml = '';
+      if (m.maxSpiceLevel > 0) {
+        let rows = '';
+        for (let i = 0; i <= m.maxSpiceLevel; i++) {
+          const sel = sheetSpice === i ? 'sel' : '';
+          rows += '<div class="option-row" onclick="selectSpice(' + i + ')">'
+            + '<div class="option-left">'
+            + '<div class="radio ' + sel + '" id="spice-' + i + '"></div>'
+            + '<span class="option-label">' + (spiceLabels[i] || 'เผ็ด ' + i) + '</span>'
+            + '</div><span class="option-price">฿0</span></div>';
+        }
+        spiceHtml = '<div class="section"><div class="section-title">ระดับความเผ็ด</div>'
+          + '<div class="section-sub">กรุณาเลือก 1 ข้อ · ต้องระบุ</div>' + rows + '</div>';
+      }
 
-      document.getElementById('sheet-content').innerHTML = \`
-        \${m.imageUrl
-          ? \`<img class="sheet-hero" src="\${m.imageUrl}" alt="\${m.name}"/>\`
-          : \`<div class="sheet-hero-placeholder">🍽️</div>\`}
-        <div class="sheet-body">
-          <div class="sheet-name">\${m.name}</div>
-          <div class="sheet-desc">\${m.description}</div>
-          <div class="sheet-price">฿\${m.price.toFixed(0)}</div>
-          \${spiceOptions}
-          <div class="section">
-            <div class="qty-row">
-              <span class="section-title">จำนวน</span>
-              <div class="qty-ctrl">
-                <button class="qty-btn" onclick="changeSheetQty(-1)">−</button>
-                <span class="qty-num" id="sheet-qty">\${sheetQty}</span>
-                <button class="qty-btn" onclick="changeSheetQty(1)">+</button>
-              </div>
-            </div>
-          </div>
-          <button class="add-cart-btn" id="add-cart-btn" onclick="addToCart()">ใส่ตะกร้า · ฿\${total}</button>
-        </div>\`;
+      const heroHtml = m.imageUrl
+        ? '<img class="sheet-hero" src="' + m.imageUrl + '" alt="' + m.name + '"/>'
+        : '<div class="sheet-hero-placeholder">🍽️</div>';
+
+      document.getElementById('sheet-content').innerHTML = heroHtml
+        + '<div class="sheet-body">'
+        + '<div class="sheet-name">' + m.name + '</div>'
+        + '<div class="sheet-desc">' + m.description + '</div>'
+        + '<div class="sheet-price">฿' + m.price.toFixed(0) + '</div>'
+        + spiceHtml
+        + '<div class="section"><div class="qty-row">'
+        + '<span class="section-title">จำนวน</span>'
+        + '<div class="qty-ctrl">'
+        + '<button class="qty-btn" onclick="changeSheetQty(-1)">−</button>'
+        + '<span class="qty-num" id="sheet-qty">' + sheetQty + '</span>'
+        + '<button class="qty-btn" onclick="changeSheetQty(1)">+</button>'
+        + '</div></div></div>'
+        + '<button class="add-cart-btn" id="add-cart-btn" onclick="addToCart()">ใส่ตะกร้า · ฿' + total + '</button>'
+        + '</div>';
       updateAddCartBtn();
     }
 
