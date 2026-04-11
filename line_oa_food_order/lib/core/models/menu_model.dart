@@ -1,3 +1,33 @@
+class AddonOption {
+  final String id;
+  final String name;
+  final double price;
+  const AddonOption({required this.id, required this.name, required this.price});
+
+  factory AddonOption.fromJson(Map<String, dynamic> json) => AddonOption(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        price: (json['price'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'price': price};
+}
+
+class PortionOption {
+  final String id;
+  final String name;
+  final double extraPrice;
+  const PortionOption({required this.id, required this.name, required this.extraPrice});
+
+  factory PortionOption.fromJson(Map<String, dynamic> json) => PortionOption(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        extraPrice: (json['extraPrice'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'extraPrice': extraPrice};
+}
+
 class MenuModel {
   final String id;
   final String merchantId;
@@ -10,6 +40,8 @@ class MenuModel {
   final int maxSpiceLevel;
   final List<String> ingredientIds;
   final bool isAvailable;
+  final List<AddonOption> addons;
+  final List<PortionOption> portionOptions;
 
   const MenuModel({
     required this.id,
@@ -23,6 +55,8 @@ class MenuModel {
     required this.maxSpiceLevel,
     required this.ingredientIds,
     required this.isAvailable,
+    this.addons = const [],
+    this.portionOptions = const [],
   });
 
   factory MenuModel.fromJson(Map<String, dynamic> json) => MenuModel(
@@ -37,6 +71,12 @@ class MenuModel {
         maxSpiceLevel: json['maxSpiceLevel'] as int,
         ingredientIds: List<String>.from(json['ingredientIds'] as List),
         isAvailable: json['isAvailable'] as bool,
+        addons: (json['addons'] as List? ?? [])
+            .map((e) => AddonOption.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        portionOptions: (json['portionOptions'] as List? ?? [])
+            .map((e) => PortionOption.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -51,6 +91,8 @@ class MenuModel {
         'maxSpiceLevel': maxSpiceLevel,
         'ingredientIds': ingredientIds,
         'isAvailable': isAvailable,
+        'addons': addons.map((e) => e.toJson()).toList(),
+        'portionOptions': portionOptions.map((e) => e.toJson()).toList(),
       };
 }
 

@@ -6,7 +6,6 @@ import 'package:line_oa_food_order/core/models/menu_model.dart';
 import 'package:line_oa_food_order/core/services/api_service.dart';
 import 'package:line_oa_food_order/core/services/flex_message_generator.dart';
 import 'package:line_oa_food_order/features/menu/providers/menu_provider.dart';
-
 class MenuListScreen extends ConsumerStatefulWidget {
   const MenuListScreen({super.key});
 
@@ -435,6 +434,8 @@ class _EditMenuSheetState extends State<_EditMenuSheet> {
   bool _loading = false;
   Uint8List? _imageBytes;
   String _imageName = '';
+  late List<AddonOption> _addons;
+  late List<PortionOption> _portions;
 
   @override
   void initState() {
@@ -445,6 +446,8 @@ class _EditMenuSheetState extends State<_EditMenuSheet> {
     _descCtrl = TextEditingController(text: m.description);
     _category = m.category;
     _available = m.isAvailable;
+    _addons = List.from(m.addons);
+    _portions = List.from(m.portionOptions);
   }
 
   @override
@@ -479,6 +482,8 @@ class _EditMenuSheetState extends State<_EditMenuSheet> {
           'maxSpiceLevel': widget.menu.maxSpiceLevel.toString(),
           'ingredientIds': '[]',
           'isAvailable': _available.toString(),
+          'addons': _addons.map((e) => e.toJson()).toList().toString(),
+          'portionOptions': _portions.map((e) => e.toJson()).toList().toString(),
           if (_imageBytes == null && widget.menu.imageUrl != null)
             'imageUrl': widget.menu.imageUrl!,
         },
@@ -571,6 +576,13 @@ class _EditMenuSheetState extends State<_EditMenuSheet> {
                   activeColor: const Color(0xFF1A1A1A)),
             ]),
             const SizedBox(height: 16),
+            _OptionsEditor(
+              addons: _addons,
+              portions: _portions,
+              onAddonsChanged: (v) => setState(() => _addons = v),
+              onPortionsChanged: (v) => setState(() => _portions = v),
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -606,6 +618,8 @@ class _AddMenuSheetState extends State<_AddMenuSheet> {
   bool _loading = false;
   Uint8List? _imageBytes;
   String _imageName = '';
+  List<AddonOption> _addons = [];
+  List<PortionOption> _portions = [];
 
   @override
   void dispose() {
@@ -640,6 +654,8 @@ class _AddMenuSheetState extends State<_AddMenuSheet> {
           'maxSpiceLevel': '3',
           'ingredientIds': '[]',
           'isAvailable': _available.toString(),
+          'addons': _addons.map((e) => e.toJson()).toList().toString(),
+          'portionOptions': _portions.map((e) => e.toJson()).toList().toString(),
         },
         imageBytes: _imageBytes,
         imageName: _imageName,
@@ -675,7 +691,6 @@ class _AddMenuSheetState extends State<_AddMenuSheet> {
           children: [
             const Text('เพิ่มเมนูใหม่', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            // image picker
             GestureDetector(
               onTap: _pickImage,
               child: Container(
@@ -693,6 +708,62 @@ class _AddMenuSheetState extends State<_AddMenuSheet> {
                     : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Icon(Icons.add_photo_alternate_outlined, size: 32, color: Color(0xFF9E9E9E)),
                         SizedBox(height: 6),
+                        Text('เพิ่มรูปเมนู', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
+                      ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _Field(ctrl: _nameCtrl, label: 'ชื่อเมนู'),
+            const SizedBox(height: 12),
+            _Field(ctrl: _priceCtrl, label: 'ราคา (บาท)', type: TextInputType.number),
+            const SizedBox(height: 12),
+            _Field(ctrl: _descCtrl, label: 'คำอธิบาย'),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _category,
+              decoration: InputDecoration(
+                labelText: 'หมวดหมู่',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true, fillColor: const Color(0xFFF5F5F5),
+              ),
+              items: ['กระเพรา', 'ผัดไทย', 'ต้มยำ', 'แกง', 'ยำ', 'ราดหน้า', 'ปิ้งย่าง', 'ของหวาน', 'อื่นๆ']
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+              onChanged: (v) => setState(() => _category = v ?? _category),
+            ),
+            const SizedBox(height: 12),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text('พร้อมขาย', style: TextStyle(fontWeight: FontWeight.w600)),
+              Switch(value: _available, onChanged: (v) => setState(() => _available = v),
+                  activeColor: const Color(0xFF1A1A1A)),
+            ]),
+            const SizedBox(height: 16),
+            _OptionsEditor(
+              addons: _addons,
+              portions: _portions,
+              onAddonsChanged: (v) => setState(() => _addons = v),
+              onPortionsChanged: (v) => setState(() => _portions = v),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _save,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF6B00),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                ),
+                child: _loading
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('เพิ่มเมนู', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}           SizedBox(height: 6),
                         Text('เลือกรูปเมนู (ไม่บังคับ)', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
                       ]),
               ),
@@ -734,6 +805,139 @@ class _AddMenuSheetState extends State<_AddMenuSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Options Editor ───────────────────────────────────────────────────────────
+
+class _OptionsEditor extends StatefulWidget {
+  final List<AddonOption> addons;
+  final List<PortionOption> portions;
+  final ValueChanged<List<AddonOption>> onAddonsChanged;
+  final ValueChanged<List<PortionOption>> onPortionsChanged;
+  const _OptionsEditor({
+    required this.addons,
+    required this.portions,
+    required this.onAddonsChanged,
+    required this.onPortionsChanged,
+  });
+
+  @override
+  State<_OptionsEditor> createState() => _OptionsEditorState();
+}
+
+class _OptionsEditorState extends State<_OptionsEditor> {
+  void _addAddon() async {
+    final result = await _showOptionDialog(context, title: 'เพิ่มตัวเลือกเสริม');
+    if (result == null) return;
+    final updated = [...widget.addons, AddonOption(id: result.$1.toLowerCase().replaceAll(' ', '-'), name: result.$1, price: result.$2)];
+    widget.onAddonsChanged(updated);
+  }
+
+  void _addPortion() async {
+    final result = await _showOptionDialog(context, title: 'เพิ่มขนาด/ส่วน', pricePlaceholder: 'ราคาเพิ่ม (0 = ฟรี)');
+    if (result == null) return;
+    final updated = [...widget.portions, PortionOption(id: result.$1.toLowerCase().replaceAll(' ', '-'), name: result.$1, extraPrice: result.$2)];
+    widget.onPortionsChanged(updated);
+  }
+
+  Future<(String, double)?> _showOptionDialog(BuildContext ctx, {required String title, String pricePlaceholder = 'ราคา (0 = ฟรี)'}) async {
+    final nameCtrl = TextEditingController();
+    final priceCtrl = TextEditingController(text: '0');
+    return showDialog<(String, double)>(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'ชื่อ')),
+          const SizedBox(height: 8),
+          TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: pricePlaceholder)),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
+          TextButton(
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              final price = double.tryParse(priceCtrl.text) ?? 0;
+              if (name.isEmpty) return;
+              Navigator.pop(ctx, (name, price));
+            },
+            child: const Text('เพิ่ม'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // ── Addons ──
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        const Text('ตัวเลือกเสริม (Addons)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        TextButton.icon(onPressed: _addAddon, icon: const Icon(Icons.add, size: 16), label: const Text('เพิ่ม')),
+      ]),
+      if (widget.addons.isEmpty)
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text('ยังไม่มีตัวเลือกเสริม', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
+        )
+      else
+        ...widget.addons.asMap().entries.map((e) => _OptionChip(
+          label: '${e.value.name}  +฿${e.value.price.toStringAsFixed(0)}',
+          onDelete: () {
+            final updated = [...widget.addons]..removeAt(e.key);
+            widget.onAddonsChanged(updated);
+          },
+        )),
+      const SizedBox(height: 12),
+      // ── Portions ──
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        const Text('ขนาด / ส่วน (Portions)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        TextButton.icon(onPressed: _addPortion, icon: const Icon(Icons.add, size: 16), label: const Text('เพิ่ม')),
+      ]),
+      if (widget.portions.isEmpty)
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text('ยังไม่มีตัวเลือกขนาด', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
+        )
+      else
+        ...widget.portions.asMap().entries.map((e) => _OptionChip(
+          label: e.value.extraPrice > 0
+              ? '${e.value.name}  +฿${e.value.extraPrice.toStringAsFixed(0)}'
+              : e.value.name,
+          onDelete: () {
+            final updated = [...widget.portions]..removeAt(e.key);
+            widget.onPortionsChanged(updated);
+          },
+        )),
+    ]);
+  }
+}
+
+class _OptionChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onDelete;
+  const _OptionChip({required this.label, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(children: [
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
+        GestureDetector(
+          onTap: onDelete,
+          child: const Icon(Icons.close, size: 16, color: Color(0xFF9E9E9E)),
+        ),
+      ]),
     );
   }
 }
