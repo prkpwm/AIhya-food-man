@@ -763,50 +763,6 @@ class _AddMenuSheetState extends State<_AddMenuSheet> {
       ),
     );
   }
-}           SizedBox(height: 6),
-                        Text('เลือกรูปเมนู (ไม่บังคับ)', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12)),
-                      ]),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _Field(ctrl: _nameCtrl, label: 'ชื่อเมนู'),
-            const SizedBox(height: 12),
-            _Field(ctrl: _priceCtrl, label: 'ราคา (บาท)', type: TextInputType.number),
-            const SizedBox(height: 12),
-            _Field(ctrl: _descCtrl, label: 'คำอธิบาย'),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _category,
-              decoration: InputDecoration(
-                labelText: 'หมวดหมู่',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true, fillColor: const Color(0xFFF5F5F5),
-              ),
-              items: ['กระเพรา', 'ผัดไทย', 'ต้มยำ', 'แกง', 'ยำ', 'ราดหน้า', 'ปิ้งย่าง', 'ของหวาน', 'อื่นๆ']
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-              onChanged: (v) => setState(() => _category = v ?? _category),
-            ),
-            const SizedBox(height: 12),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const Text('พร้อมขาย', style: TextStyle(fontWeight: FontWeight.w600)),
-              Switch(value: _available, onChanged: (v) => setState(() => _available = v),
-                  activeColor: const Color(0xFF1A1A1A)),
-            ]),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _save,
-                child: _loading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('บันทึก'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ─── Options Editor ───────────────────────────────────────────────────────────
