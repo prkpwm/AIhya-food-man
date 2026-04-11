@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:line_oa_food_order/core/models/order_model.dart';
+import 'package:line_oa_food_order/core/services/api_service.dart';
 import 'package:line_oa_food_order/features/order/providers/order_provider.dart';
+import 'dart:convert';
 
 class OrderListScreen extends ConsumerWidget {
   const OrderListScreen({super.key});
@@ -156,10 +158,11 @@ class _OrderCard extends ConsumerWidget {
                 ]),
                 if (order.status != OrderStatus.completed && order.status != OrderStatus.cancelled)
                   GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       final next = _nextStatus(order.status);
                       if (next == null) return;
-                      ref.read(orderListProvider.notifier).updateStatus(order.id, next);
+                      await ref.read(orderListProvider.notifier).updateStatus(order.id, next);
+                      _pushStatusFlex(order, next);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -194,5 +197,66 @@ class _OrderCard extends ConsumerWidget {
       case OrderStatus.ready: return 'เสร็จสิ้น';
       default: return '';
     }
+  }
+
+  void _pushStatusFlex(OrderModel order, OrderStatus newStatus) {
+    final statusLabel = {
+      OrderStatus.confirmed: '✅ ยืนยันออเดอร์แล้ว',
+      OrderStatus.preparing: '👨‍🍳 กำลังเตรียมอาหาร',
+      OrderStatus.ready: '🛵 อาหารพร้อมแล้ว',
+      OrderStatus.completed: '✅ เสร็จสิ้น',
+    };
+    final headerColor = {
+      OrderStatus.confirmed: '#2196F3',
+      OrderStatus.preparing: '#FF6B00',
+      OrderStatus.ready: '#9C27B0',
+      OrderStatus.completed: '#4CAF50',
+    };
+
+    final label = statusLabel[newStatus] ?? newStatus.displayName;
+    final color = headerColor[newStatus] ?? '#1A1A1A';
+    final shortId = order.id.split('-').last;
+
+    final itemRows = order.items.map((i) => {
+      'type': 'box', 'layout': 'baseline', 'contents': [
+        {'type': 'text', 'text': '${i.menuName} ×${i.quantity}', 'size': 'sm', 'color': '#555555', 'flex': 4},
+        {'type': 'text', 'text': '฿${i.totalPrice.toStringAsFixed(0)}', 'align': 'end', 'size': 'sm', 'flex': 2},
+      ],
+    }).toList();
+
+    final flex = {
+      'type': 'flex',
+      'altText': '$label #$shortId',
+      'contents': {
+        'type': 'bubble',
+        'header': {
+          'type': 'box', 'layout': 'vertical', 'backgroundColor': color, 'paddingAll': '16px',
+          'contents': [
+            {'type': 'text', 'text': label, 'weight': 'bold', 'size': 'lg', 'color': '#ffffff'},
+            {'type': 'text', 'text': '#$shortId', 'size': 'sm', 'color': 'rgba(255,255,255,0.8)'},
+          ],
+        },
+        'body': {
+          'type': 'box', 'layout': 'vertical', 'spacing': 'md',
+          'contents': [
+            ...itemRows,
+            {'type': 'separator', 'margin': 'sm'},
+            {'type': 'box', 'layout': 'baseline', 'contents': [
+              {'type': 'text', 'text': 'ยอดรวม', 'size': 'sm', 'color': '#555555', 'flex': 4},
+              {'type': 'text', 'text': '฿${order.totalPrice.toStringAsFixed(0)}', 'align': 'end', 'size': 'md', 'weight': 'bold', 'color': '#FF6B00', 'flex': 2},
+            ]},
+          ],
+        },
+        'footer': {
+          'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
+          'contents': [
+            {'type': 'button', 'style': 'secondary', 'action': {'type': 'message', 'label': '📦 ดูสถานะ', 'text': 'สถานะ #$shortId'}},
+          ],
+        },
+      },
+    };
+
+    // fire and forget
+    ApiService().pushFlex(order.customerId, jsonEncode(flex));
   }
 }

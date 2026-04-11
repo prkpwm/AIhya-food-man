@@ -23,8 +23,8 @@ class ApiService {
   static const String _prod = 'https://aihya-food-man.onrender.com/api';
   static const String _local = 'http://localhost:3001/api';
   // Use local Next.js API when running in debug mode on web (avoids CORS — Next.js adds headers)
-  static String get baseUrl => (kIsWeb && kDebugMode) ? _local : _prod;
-
+  // static String get baseUrl => (kIsWeb && kDebugMode) ? _local : _prod;
+  static String get baseUrl => _prod;
   final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
     connectTimeout: const Duration(seconds: 90),
