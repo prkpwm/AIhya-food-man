@@ -10,61 +10,17 @@ interface ButtonArea {
   label: string;
 }
 
-// ─── SVG overlay ──────────────────────────────────────────────────────────────
-
-function buildSvgOverlay(areas: ButtonArea[], H: number): Buffer {
-  // vertical dividers between columns (same x, different rows)
-  const seenX = new Set<number>();
-  const dividers: string[] = [];
-  for (const a of areas) {
-    const x = a.x + a.width;
-    if (!seenX.has(x) && x < W) {
-      seenX.add(x);
-      dividers.push(`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="rgba(255,255,255,0.4)" stroke-width="3"/>`);
-    }
-  }
-
-  // horizontal divider for large menu
-  const rows = [...new Set(areas.map((a) => a.y))];
-  const hDividers = rows.slice(1).map((y) =>
-    `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="rgba(255,255,255,0.4)" stroke-width="3"/>`
-  );
-
-  const labels = areas.map((a) => {
-    const cx = a.x + a.width / 2;
-    const cy = a.y + a.height / 2;
-    return `
-      <rect x="${a.x + 30}" y="${cy - 46}" width="${a.width - 60}" height="60"
-            rx="30" fill="rgba(0,0,0,0.6)"/>
-      <text x="${cx}" y="${cy + 6}"
-            font-family="TlwgTypo, Garuda, Norasi, 'Noto Sans Thai', sans-serif" font-size="54" font-weight="bold"
-            fill="white" text-anchor="middle" dominant-baseline="middle">${a.label}</text>`;
-  });
-
-  return Buffer.from(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
-      ${dividers.join('\n')}
-      ${hDividers.join('\n')}
-      ${labels.join('\n')}
-    </svg>`);
-}
-
 // ─── Compose final image ──────────────────────────────────────────────────────
 
 export async function generateRichMenuImage(
   bgBuffer: Buffer,
-  areas: ButtonArea[],
+  _areas: ButtonArea[],
   H: number = 843
 ): Promise<Buffer> {
-  const svg = buildSvgOverlay(areas, H);
-
-  const result = await sharp(bgBuffer)
+  return sharp(bgBuffer)
     .resize(W, H, { fit: 'cover', position: 'centre' })
-    .composite([{ input: svg, top: 0, left: 0 }])
     .jpeg({ quality: 85 })
     .toBuffer();
-
-  return result;
 }
 
 // ─── Area factories ───────────────────────────────────────────────────────────
