@@ -10,13 +10,15 @@ ensureInit();
 
 function baseUrl() { return env.renderExternalUrl || 'http://localhost:3000'; }
 
-export function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const menu = menuService.getMenu(params.id);
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const menu = menuService.getMenu(id);
   if (!menu) return NextResponse.json({ code: '404', en: 'Not found', th: 'ไม่พบเมนู' }, { status: 404 });
   return NextResponse.json({ success: true, data: menu });
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const contentType = req.headers.get('content-type') ?? '';
   let body: Partial<Menu> = {};
   let imageUrl: string | null = null;
@@ -38,10 +40,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     body = await req.json();
   }
 
-  const existing = menuService.getMenu(params.id);
+  const existing = menuService.getMenu(id);
   const menu = menuService.upsertMenu({
     ...(body as Omit<Menu, 'id'>),
-    id: params.id,
+    id,
     price: Number(body.price),
     maxSpiceLevel: Number(body.maxSpiceLevel ?? 3),
     isAvailable: body.isAvailable === true || (body.isAvailable as unknown as string) === 'true',
@@ -52,8 +54,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ success: true, data: menu });
 }
 
-export function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const deleted = menuService.deleteMenu(params.id);
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const deleted = menuService.deleteMenu(id);
   if (!deleted) return NextResponse.json({ code: '404', en: 'Not found', th: 'ไม่พบเมนู' }, { status: 404 });
   return NextResponse.json({ success: true });
 }
