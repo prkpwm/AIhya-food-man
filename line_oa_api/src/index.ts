@@ -39,8 +39,17 @@ export function pushLog(entry: LogEntry): void {
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }));
-app.options('*', cors());
+// ─── CORS (manual headers to guarantee browser compliance) ───────────────────
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
 app.use(traceMiddleware);
 app.use('/images', express.static('public/images'));
 app.use('/images/menus', express.static('public/images/menus'));

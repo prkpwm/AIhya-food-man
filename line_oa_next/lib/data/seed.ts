@@ -11,7 +11,7 @@ let seeded = false;
 function imageUrl(menuId: string, fallback: string): string {
   const localPath = path.join(process.cwd(), 'public', 'images', `${menuId}.jpg`);
   return fs.existsSync(localPath)
-    ? `${env.renderExternalUrl || 'http://localhost:3000'}/images/${menuId}.jpg`
+    ? `${env.renderExternalUrl || 'http://localhost:3001'}/images/${menuId}.jpg`
     : fallback;
 }
 
