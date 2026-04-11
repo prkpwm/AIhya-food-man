@@ -3,131 +3,191 @@ import { getMenusByMerchant } from '@/lib/services/menu.service';
 
 ensureInit();
 
-const CSS = `
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f5;padding-bottom:90px}
-.header{background:#fff;padding:16px 20px;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10}
-.header h1{font-size:20px;font-weight:700}
-.header p{font-size:13px;color:#999;margin-top:2px}
-.menu-list{padding:12px 16px;display:flex;flex-direction:column;gap:10px}
-.menu-card{background:#fff;border-radius:16px;display:flex;align-items:center;gap:12px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;position:relative}
-.menu-card img,.no-img{width:72px;height:72px;border-radius:12px;object-fit:cover;flex-shrink:0;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:28px}
-.menu-info{flex:1;min-width:0}
-.menu-name{font-weight:600;font-size:15px}
-.menu-desc{font-size:12px;color:#999;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.menu-price{font-size:15px;font-weight:700;color:#FF6B00;margin-top:4px}
-.add-btn{width:32px;height:32px;border-radius:50%;background:#FF6B00;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer}
-.cart-badge{position:absolute;top:-6px;right:-6px;background:#FF6B00;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.footer{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:12px 16px;border-top:1px solid #eee;display:flex;align-items:center;gap:12px}
-.cart-summary{flex:1;font-size:14px;color:#555;cursor:pointer;padding:4px 0}
-.cart-count{font-weight:700;color:#FF6B00}
-.checkout-btn{padding:12px 24px;background:#FF6B00;color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer}
-.checkout-btn:disabled{background:#ccc}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
-.overlay.show{opacity:1;pointer-events:all}
-.sheet{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:51;transform:translateY(100%);transition:transform .3s ease;max-height:90vh;overflow-y:auto}
-.sheet.show{transform:translateY(0)}
-.sheet-hero{width:100%;height:200px;object-fit:cover;border-radius:20px 20px 0 0}
-.sheet-hero-placeholder{width:100%;height:200px;background:#f0f0f0;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:center;font-size:60px}
-.sheet-body{padding:20px}
-.sheet-name{font-size:20px;font-weight:700}
-.sheet-desc{font-size:13px;color:#999;margin-top:4px}
-.sheet-price{font-size:20px;font-weight:700;color:#FF6B00;margin-top:8px}
-.section{margin-top:20px}
-.section-title{font-size:15px;font-weight:700;margin-bottom:4px}
-.section-sub{font-size:12px;color:#999;margin-bottom:10px}
-.option-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f5f5f5;cursor:pointer}
-.option-label{font-size:14px}
-.option-price{font-size:13px;color:#999}
-.option-left{display:flex;align-items:center;gap:10px}
-.radio,.checkbox{width:20px;height:20px;border-radius:50%;border:2px solid #ddd;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.checkbox{border-radius:5px}
-.radio.sel,.checkbox.sel{border-color:#FF6B00;background:#FF6B00}
-.radio.sel::after{content:"";width:8px;height:8px;background:#fff;border-radius:50%}
-.checkbox.sel::after{content:"✓";color:#fff;font-size:13px;font-weight:700}
-.qty-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
-.qty-ctrl{display:flex;align-items:center;gap:16px}
-.qty-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid #ddd;background:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.qty-num{font-size:18px;font-weight:700;min-width:24px;text-align:center}
-.add-cart-btn{width:100%;padding:16px;background:#06C755;color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;margin-bottom:8px}
-.note-input{width:100%;padding:10px 14px;border:1.5px solid #eee;border-radius:12px;font-size:14px;margin-top:8px;outline:none;background:#fafafa}
-.note-input:focus{border-color:#FF6B00}
-.cart-item-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #f5f5f5}
-.cart-item-info{flex:1;min-width:0}
-.cart-item-name{font-size:14px;font-weight:600}
-.cart-item-note{font-size:12px;color:#999;margin-top:2px}
-.cart-item-price{font-size:14px;font-weight:700;color:#FF6B00;white-space:nowrap}
-.cart-item-qty{display:flex;align-items:center;gap:8px}
-.cart-qty-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid #ddd;background:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.cart-qty-num{font-size:14px;font-weight:700;min-width:18px;text-align:center}
-.cart-total-row{display:flex;justify-content:space-between;padding:16px 0;font-weight:700;font-size:16px}
-.cart-total-price{color:#FF6B00}
-.cart-checkout-btn{width:100%;padding:16px;background:#FF6B00;color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:8px}
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap}
-.toast.show{opacity:1}
-`;
-
 export default function OrderWebPage() {
   const menus = getMenusByMerchant('merchant-001').filter((m) => m.isAvailable);
+  const categories = [...new Set(menus.map((m) => m.category))];
+
   const menusJson = JSON.stringify(menus.map((m) => ({
     id: m.id, name: m.name, description: m.description,
     price: m.price, imageUrl: m.imageUrl, maxSpiceLevel: m.maxSpiceLevel,
-    addons: m.addons ?? [], portionOptions: m.portionOptions ?? [],
+    category: m.category, addons: m.addons ?? [], portionOptions: m.portionOptions ?? [],
   })));
 
   const menuCards = menus.map((m) => (
-    `<div class="menu-card" data-menuid="${m.id}" onclick="openDetail(this.dataset.menuid)">
-      ${m.imageUrl ? `<img src="${m.imageUrl}" alt="${m.name}" loading="lazy"/>` : '<div class="no-img">🍽️</div>'}
-      <div class="menu-info">
+    `<div class="menu-card" data-menuid="${m.id}" data-category="${m.category}" onclick="openDetail(this.dataset.menuid)">
+      <div class="menu-card-img-wrap">
+        ${m.imageUrl
+          ? `<img src="${m.imageUrl}" alt="${m.name}" loading="lazy"/>`
+          : '<div class="no-img">🍽️</div>'}
+        <div class="menu-badge" id="badge-${m.id}" style="display:none">0</div>
+      </div>
+      <div class="menu-card-body">
         <div class="menu-name">${m.name}</div>
         <div class="menu-desc">${m.description}</div>
-        <div class="menu-price">฿${m.price.toFixed(0)}</div>
+        <div class="menu-card-footer">
+          <span class="menu-price">฿${m.price.toFixed(0)}</span>
+          <button class="add-btn" data-menuid="${m.id}" onclick="event.stopPropagation();openDetail(this.dataset.menuid)">+</button>
+        </div>
       </div>
-      <div class="add-btn" data-menuid="${m.id}" onclick="event.stopPropagation();openDetail(this.dataset.menuid)">+</div>
     </div>`
   )).join('');
+
+  const catTabs = categories.map((c, i) =>
+    `<button class="cat-tab${i === 0 ? ' active' : ''}" data-cat="${c}" onclick="filterCat(this)">${c}</button>`
+  ).join('');
 
   return (
     <html lang="th">
       <head>
         <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0" />
         <title>สั่งอาหาร</title>
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" />
         <style dangerouslySetInnerHTML={{ __html: CSS }} />
       </head>
       <body>
+        {/* ── Header ── */}
         <div className="header">
-          <h1>🍽️ สั่งอาหาร</h1>
-          <p>แตะเมนูเพื่อเลือกและปรับแต่ง</p>
-        </div>
-        <div className="menu-list" dangerouslySetInnerHTML={{ __html: menuCards }} />
-        <div className="footer">
-          <div className="cart-summary" id="cart-bar">
-            ตะกร้า: <span className="cart-count" id="cart-count">0</span> รายการ · <span id="cart-total">฿0</span>
+          <div className="header-top">
+            <div className="shop-name">🍽️ สั่งอาหาร</div>
           </div>
-          <button className="checkout-btn" id="checkout-btn" disabled>สั่งอาหาร</button>
+          <div className="search-bar">
+            <span className="search-icon">🔍</span>
+            <input id="search-input" type="text" placeholder="ค้นหาเมนู..." oninput="searchMenus(this.value)" />
+          </div>
+          <div className="cat-tabs" id="cat-tabs" dangerouslySetInnerHTML={{ __html: catTabs }} />
         </div>
+
+        {/* ── Menu grid ── */}
+        <div className="menu-grid" id="menu-grid" dangerouslySetInnerHTML={{ __html: menuCards }} />
+
+        {/* ── Cart bar ── */}
+        <div className="cart-bar" id="cart-bar" style={{ display: 'none' }} onClick={() => {}}>
+          <div className="cart-bar-left">
+            <span className="cart-bar-count" id="cart-count">0</span>
+            <span className="cart-bar-label">รายการ</span>
+          </div>
+          <div className="cart-bar-center" id="cart-total">฿0</div>
+          <div className="cart-bar-right">ดูตะกร้า →</div>
+        </div>
+
+        {/* ── Overlays & sheets ── */}
         <div className="overlay" id="overlay" />
-        <div className="sheet" id="sheet">
-          <div id="sheet-content" />
-        </div>
-        {/* cart review sheet */}
+        <div className="sheet" id="sheet"><div id="sheet-content" /></div>
         <div className="overlay" id="cart-overlay" />
-        <div className="sheet" id="cart-sheet">
-          <div id="cart-content" />
-        </div>
+        <div className="sheet" id="cart-sheet"><div id="cart-content" /></div>
         <div className="toast" id="toast" />
+
         <script dangerouslySetInnerHTML={{ __html: `window.__MENUS__ = ${menusJson};` }} />
         <script src="/order-web-app.js" />
         <script dangerouslySetInnerHTML={{ __html: `
           document.getElementById('overlay').addEventListener('click', closeSheet);
           document.getElementById('cart-overlay').addEventListener('click', closeCartSheet);
-          document.getElementById('checkout-btn').addEventListener('click', checkout);
           document.getElementById('cart-bar').addEventListener('click', openCartSheet);
         ` }} />
       </body>
     </html>
   );
 }
+
+const CSS = `
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f7f7;padding-bottom:80px}
+
+/* ── Header ── */
+.header{background:#fff;position:sticky;top:0;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.header-top{padding:14px 16px 8px;display:flex;align-items:center;gap:10px}
+.shop-name{font-size:18px;font-weight:700;flex:1}
+.search-bar{margin:0 16px 10px;display:flex;align-items:center;background:#f2f2f2;border-radius:12px;padding:8px 12px;gap:8px}
+.search-bar input{border:none;background:transparent;font-size:14px;flex:1;outline:none}
+.search-icon{font-size:14px;color:#999}
+.cat-tabs{display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none}
+.cat-tabs::-webkit-scrollbar{display:none}
+.cat-tab{flex-shrink:0;padding:6px 16px;border-radius:50px;border:1.5px solid #e0e0e0;background:#fff;font-size:13px;font-weight:500;cursor:pointer;color:#555;transition:all .15s}
+.cat-tab.active{background:#FF6B00;border-color:#FF6B00;color:#fff;font-weight:700}
+
+/* ── Menu grid ── */
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px}
+.menu-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;transition:transform .1s}
+.menu-card:active{transform:scale(.97)}
+.menu-card-img-wrap{position:relative;width:100%;aspect-ratio:4/3}
+.menu-card-img-wrap img,.no-img{width:100%;height:100%;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:40px;background:#f0f0f0}
+.menu-badge{position:absolute;top:8px;right:8px;background:#FF6B00;color:#fff;border-radius:50%;width:22px;height:22px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(255,107,0,.4)}
+.menu-card-body{padding:10px}
+.menu-name{font-weight:600;font-size:14px;line-height:1.3}
+.menu-desc{font-size:11px;color:#999;margin-top:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.menu-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.menu-price{font-size:15px;font-weight:700;color:#FF6B00}
+.add-btn{width:30px;height:30px;border-radius:50%;background:#FF6B00;color:#fff;font-size:20px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;line-height:1}
+
+/* ── Cart bar ── */
+.cart-bar{position:fixed;bottom:16px;left:16px;right:16px;background:#1A1A1A;border-radius:16px;padding:14px 18px;display:flex;align-items:center;z-index:30;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.25)}
+.cart-bar-left{display:flex;align-items:center;gap:6px}
+.cart-bar-count{background:#FF6B00;color:#fff;border-radius:50%;width:24px;height:24px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.cart-bar-label{color:#fff;font-size:14px}
+.cart-bar-center{flex:1;text-align:center;color:#fff;font-size:16px;font-weight:700}
+.cart-bar-right{color:#FF6B00;font-size:13px;font-weight:600}
+
+/* ── Overlay & sheet ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.show{opacity:1;pointer-events:all}
+.sheet{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:51;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:92vh;overflow-y:auto}
+.sheet.show{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:#e0e0e0;border-radius:2px;margin:12px auto 0}
+
+/* ── Menu detail sheet ── */
+.sheet-hero{width:100%;aspect-ratio:4/3;object-fit:cover}
+.sheet-hero-placeholder{width:100%;aspect-ratio:4/3;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:60px}
+.sheet-body{padding:16px}
+.sheet-name{font-size:20px;font-weight:700}
+.sheet-desc{font-size:13px;color:#777;margin-top:4px;line-height:1.5}
+.sheet-price{font-size:22px;font-weight:700;color:#FF6B00;margin-top:8px}
+.section{margin-top:20px;border-top:1px solid #f0f0f0;padding-top:16px}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.section-title{font-size:15px;font-weight:700}
+.section-required{background:#FF6B00;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px}
+.section-sub{font-size:12px;color:#999;margin-bottom:10px}
+.option-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f5f5f5;cursor:pointer}
+.option-left{display:flex;align-items:center;gap:12px}
+.option-label{font-size:14px}
+.option-price{font-size:13px;color:#999}
+.radio,.checkbox{width:22px;height:22px;border-radius:50%;border:2px solid #ddd;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.checkbox{border-radius:6px}
+.radio.sel,.checkbox.sel{border-color:#FF6B00;background:#FF6B00}
+.radio.sel::after{content:"";width:8px;height:8px;background:#fff;border-radius:50%}
+.checkbox.sel::after{content:"✓";color:#fff;font-size:13px;font-weight:700}
+.note-section{margin-top:16px}
+.note-input{width:100%;padding:12px 14px;border:1.5px solid #eee;border-radius:12px;font-size:14px;outline:none;background:#fafafa;margin-top:6px}
+.note-input:focus{border-color:#FF6B00}
+.qty-section{display:flex;align-items:center;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0}
+.qty-ctrl{display:flex;align-items:center;gap:16px}
+.qty-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid #ddd;background:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:600}
+.qty-btn.minus{color:#FF6B00;border-color:#FF6B00}
+.qty-btn.plus{background:#FF6B00;color:#fff;border-color:#FF6B00}
+.qty-num{font-size:18px;font-weight:700;min-width:28px;text-align:center}
+.add-cart-btn{width:100%;padding:16px;background:#FF6B00;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;margin-bottom:8px;transition:opacity .15s}
+.add-cart-btn:disabled{opacity:.4}
+
+/* ── Cart sheet ── */
+.cart-header{padding:16px;border-bottom:1px solid #f0f0f0;font-size:18px;font-weight:700}
+.cart-item-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #f5f5f5}
+.cart-item-img{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#f0f0f0;flex-shrink:0}
+.cart-item-info{flex:1;min-width:0}
+.cart-item-name{font-size:14px;font-weight:600}
+.cart-item-note{font-size:12px;color:#999;margin-top:2px}
+.cart-item-price{font-size:14px;font-weight:700;color:#FF6B00;margin-top:4px}
+.cart-item-qty{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.cart-qty-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid #ddd;background:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:600}
+.cart-qty-btn.minus{color:#FF6B00;border-color:#FF6B00}
+.cart-qty-btn.plus{background:#FF6B00;color:#fff;border-color:#FF6B00}
+.cart-qty-num{font-size:14px;font-weight:700;min-width:20px;text-align:center}
+.cart-footer{padding:16px;border-top:2px solid #f0f0f0}
+.cart-total-row{display:flex;justify-content:space-between;margin-bottom:14px;font-size:16px;font-weight:700}
+.cart-total-price{color:#FF6B00;font-size:20px}
+.cart-checkout-btn{width:100%;padding:16px;background:#FF6B00;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer}
+
+/* ── Toast ── */
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1}
+`;
