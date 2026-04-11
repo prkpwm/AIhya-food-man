@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: 'https', hostname: '**' }],
   },
+  async rewrites() {
+    return [
+      { source: '/webhook', destination: '/api/webhook' },
+      { source: '/order-web', destination: '/api/order-web' },
+    ];
+  },
   // Disable body parsing for webhook route (we read raw body)
   async headers() {
     return [
