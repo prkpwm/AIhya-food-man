@@ -23,7 +23,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!order) return NextResponse.json({ code: '404', en: 'Not found', th: 'ไม่พบออเดอร์' }, { status: 404 });
 
   if (notifyCustomer && userId) {
-    await lineService.pushOrderStatus(env.line.channelAccessToken, userId, order);
+    const lineResult = await lineService.pushOrderStatus(env.line.channelAccessToken, userId, order);
+    return NextResponse.json({ success: true, data: order, lineResult });
   }
 
   return NextResponse.json({ success: true, data: order });
