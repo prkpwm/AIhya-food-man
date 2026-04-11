@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
     if (!env.line.channelAccessToken) {
       return NextResponse.json({ code: '500', en: 'LINE token not configured', th: 'ไม่มี token' }, { status: 500 });
     }
-    await lineService.pushFlex(env.line.channelAccessToken, userId, JSON.parse(flexJson));
-    return NextResponse.json({ success: true });
+    const result = await lineService.pushFlex(env.line.channelAccessToken, userId, JSON.parse(flexJson));
+    return NextResponse.json({ success: true, result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'unknown error';
     return NextResponse.json({ code: '500', en: msg, th: 'ข้อผิดพลาด' }, { status: 500 });

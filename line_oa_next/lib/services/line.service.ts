@@ -27,6 +27,6 @@ export async function broadcastFlex(accessToken: string, flex: unknown): Promise
   await getClient(accessToken).broadcast({ messages: [flex as LineMessage] });
 }
 
-export async function pushFlex(accessToken: string, userId: string, flex: unknown): Promise<void> {
-  await getClient(accessToken).pushMessage({ to: userId, messages: [flex as LineMessage] });
+export async function pushFlex(accessToken: string, userId: string, flex: unknown) {
+  return getClient(accessToken).pushMessage({ to: userId, messages: [flex as LineMessage] });
 }

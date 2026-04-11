@@ -26,7 +26,7 @@ class ApiService {
   // Use local Next.js API when running in debug mode on web (avoids CORS — Next.js adds headers)
   // static String get baseUrl => (kIsWeb && kDebugMode) ? _local : _prod;
   static String get baseUrl => _prod;
-  static String get nextBaseUrl => (kIsWeb && kDebugMode) ? _local : _nextProd;
+  static String get nextBaseUrl =>  _prod;
 
   final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
