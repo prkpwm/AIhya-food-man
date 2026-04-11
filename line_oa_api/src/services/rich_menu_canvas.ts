@@ -72,16 +72,16 @@ export async function generateRichMenuImage(
 
 export function customerAreas(H: number = 843): ButtonArea[] {
   if (H === 1686) return [
-    { x: 0,    y: 0,      width: 833,  height: 843, label: 'ดูเมนู' },
-    { x: 833,  y: 0,      width: 834,  height: 843, label: 'ออเดอร์' },
+    { x: 0,    y: 0,      width: 833,  height: 843, label: 'สั่งอาหาร' },
+    { x: 833,  y: 0,      width: 834,  height: 843, label: 'ติดตามสถานะ' },
     { x: 1667, y: 0,      width: 833,  height: 843, label: 'โปรโมชั่น' },
     { x: 0,    y: 843,    width: 833,  height: 843, label: 'เมนูโปรด' },
     { x: 833,  y: 843,    width: 834,  height: 843, label: 'ดูตะกร้า' },
     { x: 1667, y: 843,    width: 833,  height: 843, label: 'ติดต่อร้าน' },
   ];
   return [
-    { x: 0,    y: 0, width: 833,  height: H, label: 'ดูเมนู' },
-    { x: 833,  y: 0, width: 834,  height: H, label: 'ออเดอร์' },
+    { x: 0,    y: 0, width: 833,  height: H, label: 'สั่งอาหาร' },
+    { x: 833,  y: 0, width: 834,  height: H, label: 'ติดตามสถานะ' },
     { x: 1667, y: 0, width: 833,  height: H, label: 'โปรโมชั่น' },
   ];
 }

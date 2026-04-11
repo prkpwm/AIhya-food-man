@@ -63,7 +63,46 @@ async function handleTextMessage(
     return;
   }
 
-  // ── สั่ง [ชื่อเมนู] — เพิ่มลงตะกร้า + ถามยืนยัน ─────────────────────────
+  // ── สั่งอาหาร — เปิด LIFF web ────────────────────────────────────────────
+  if (text === 'สั่งอาหาร') {
+    const orderUrl = env.liffUrl || `${env.renderExternalUrl}/order-web`;
+    await reply(replyToken, [{
+      type: 'flex',
+      altText: 'สั่งอาหารออนไลน์',
+      contents: {
+        type: 'bubble',
+        body: {
+          type: 'box', layout: 'vertical', spacing: 'md',
+          contents: [
+            { type: 'text', text: '🍽️ สั่งอาหารออนไลน์', weight: 'bold', size: 'xl' },
+            { type: 'text', text: 'เลือกเมนูและยืนยันการสั่งได้เลย', size: 'sm', color: '#999999', wrap: true },
+          ],
+        },
+        footer: {
+          type: 'box', layout: 'vertical',
+          contents: [{
+            type: 'button', style: 'primary', color: '#FF6B00',
+            action: { type: 'uri', label: '🛒 เปิดเมนูสั่งอาหาร', uri: orderUrl },
+          }],
+        },
+      },
+    } as unknown as LineMessage]);
+    return;
+  }
+
+  // ── ติดตามสถานะ ───────────────────────────────────────────────────────────
+  if (text === 'ติดตามสถานะ') {
+    const activeOrders = orderService.getOrdersByMerchant(merchantId).filter(
+      (o) => o.customerId === userId && ['pending', 'confirmed', 'preparing', 'ready'].includes(o.status)
+    );
+    if (activeOrders.length === 0) {
+      await reply(replyToken, [{ type: 'text', text: 'ไม่มีออเดอร์ที่กำลังดำเนินการ\n\nพิมพ์ "สั่งอาหาร" เพื่อสั่งอาหาร' }]);
+      return;
+    }
+    await reply(replyToken, activeOrders.slice(0, 5).map(buildOrderStatusFlex));
+    return;
+  }
+
   if (text.startsWith('สั่ง ')) {
     const menuName = text.slice(4).trim();
     const menus = menuService.getMenusByMerchant(merchantId);

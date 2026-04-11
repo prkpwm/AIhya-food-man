@@ -152,3 +152,79 @@ export async function pushMenuCard(
 
   await client.pushMessage({ to: userId, messages: [flex as unknown as LineMessage] });
 }
+
+// ─── Push order confirm with payment button (from LIFF web order) ─────────────
+
+export async function pushOrderConfirmWithPayment(
+  accessToken: string,
+  userId: string,
+  order: Order,
+  baseUrl: string,
+): Promise<void> {
+  const client = getClient(accessToken);
+
+  const itemRows = order.items.map((item) => ({
+    type: 'box' as const,
+    layout: 'baseline' as const,
+    contents: [
+      { type: 'text' as const, text: `${item.menuName} ×${item.quantity}`, size: 'sm' as const, color: '#555555', flex: 4 },
+      { type: 'text' as const, text: `฿${(item.unitPrice * item.quantity).toFixed(0)}`, align: 'end' as const, size: 'sm' as const, flex: 2 },
+    ],
+  }));
+
+  const paymentUrl = `${baseUrl}/payment?orderId=${order.id}`;
+
+  const flex: line.FlexMessage = {
+    type: 'flex',
+    altText: `✅ ยืนยันออเดอร์ #${order.id.slice(-6)} — ฿${order.totalPrice.toFixed(0)}`,
+    contents: {
+      type: 'bubble',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FF6B00',
+        paddingAll: '16px',
+        contents: [
+          { type: 'text', text: '✅ ยืนยันออเดอร์แล้ว', weight: 'bold', size: 'lg', color: '#ffffff' },
+          { type: 'text', text: `#${order.id.slice(-6)}`, size: 'sm', color: 'rgba(255,255,255,0.8)' },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'md',
+        contents: [
+          { type: 'box', layout: 'vertical', margin: 'sm', contents: itemRows },
+          { type: 'separator', margin: 'sm' },
+          {
+            type: 'box', layout: 'baseline',
+            contents: [
+              { type: 'text', text: 'ยอดรวม', size: 'sm', color: '#555555', flex: 4 },
+              { type: 'text', text: `฿${order.totalPrice.toFixed(0)}`, align: 'end', size: 'lg', weight: 'bold', color: '#FF6B00', flex: 2 },
+            ],
+          },
+          ...(order.estimatedWaitMinutes > 0
+            ? [{ type: 'text' as const, text: `⏱ รอประมาณ ${order.estimatedWaitMinutes} นาที`, size: 'sm' as const, color: '#999999' }]
+            : []),
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button', style: 'primary', color: '#FF6B00',
+            action: { type: 'uri', label: '💳 ชำระเงิน', uri: paymentUrl },
+          },
+          {
+            type: 'button', style: 'secondary',
+            action: { type: 'message', label: '📦 ติดตามสถานะ', text: `สถานะ #${order.id.slice(-6)}` },
+          },
+        ],
+      },
+    },
+  };
+
+  await client.pushMessage({ to: userId, messages: [flex as unknown as LineMessage] });
+}

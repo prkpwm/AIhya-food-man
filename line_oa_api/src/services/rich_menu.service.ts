@@ -22,16 +22,16 @@ function getBlobClient(): messagingApi.MessagingApiBlobClient {
 export function buildCustomerMenu(shopName: string, large = false): RichMenuRequest {
   const H = large ? 1686 : 843;
   const areas = large ? [
-    { bounds: { x: 0,    y: 0,    width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'ดูเมนู',    text: 'เมนู' } },
-    { bounds: { x: 833,  y: 0,    width: 834,  height: H / 2 }, action: { type: 'message' as const, label: 'ออเดอร์',   text: 'ดูตะกร้า' } },
-    { bounds: { x: 1667, y: 0,    width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'โปรโมชั่น', text: 'โปรโมชั่น' } },
-    { bounds: { x: 0,    y: H/2,  width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'เมนูโปรด',  text: 'เมนูโปรด' } },
-    { bounds: { x: 833,  y: H/2,  width: 834,  height: H / 2 }, action: { type: 'message' as const, label: 'ดูตะกร้า', text: 'ดูตะกร้า' } },
-    { bounds: { x: 1667, y: H/2,  width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'ติดต่อร้าน', text: 'ติดต่อร้าน' } },
+    { bounds: { x: 0,    y: 0,    width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'สั่งอาหาร',     text: 'สั่งอาหาร' } },
+    { bounds: { x: 833,  y: 0,    width: 834,  height: H / 2 }, action: { type: 'message' as const, label: 'ติดตามสถานะ',   text: 'ติดตามสถานะ' } },
+    { bounds: { x: 1667, y: 0,    width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'โปรโมชั่น',     text: 'โปรโมชั่น' } },
+    { bounds: { x: 0,    y: H/2,  width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'เมนูโปรด',      text: 'เมนูโปรด' } },
+    { bounds: { x: 833,  y: H/2,  width: 834,  height: H / 2 }, action: { type: 'message' as const, label: 'ดูตะกร้า',      text: 'ดูตะกร้า' } },
+    { bounds: { x: 1667, y: H/2,  width: 833,  height: H / 2 }, action: { type: 'message' as const, label: 'ติดต่อร้าน',    text: 'ติดต่อร้าน' } },
   ] : [
-    { bounds: { x: 0,    y: 0, width: 833,  height: H }, action: { type: 'message' as const, label: 'ดูเมนู',    text: 'เมนู' } },
-    { bounds: { x: 833,  y: 0, width: 834,  height: H }, action: { type: 'message' as const, label: 'ออเดอร์',   text: 'ดูตะกร้า' } },
-    { bounds: { x: 1667, y: 0, width: 833,  height: H }, action: { type: 'message' as const, label: 'โปรโมชั่น', text: 'โปรโมชั่น' } },
+    { bounds: { x: 0,    y: 0, width: 833,  height: H }, action: { type: 'message' as const, label: 'สั่งอาหาร',   text: 'สั่งอาหาร' } },
+    { bounds: { x: 833,  y: 0, width: 834,  height: H }, action: { type: 'message' as const, label: 'ติดตามสถานะ', text: 'ติดตามสถานะ' } },
+    { bounds: { x: 1667, y: 0, width: 833,  height: H }, action: { type: 'message' as const, label: 'โปรโมชั่น',   text: 'โปรโมชั่น' } },
   ];
   return { size: { width: 2500, height: H }, selected: true, name: `${shopName} - Customer Menu`, chatBarText: 'เมนูร้าน', areas };
 }
