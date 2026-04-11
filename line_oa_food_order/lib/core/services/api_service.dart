@@ -21,12 +21,22 @@ class RetryInterceptor extends Interceptor {
 
 class ApiService {
   static const String _prod = 'https://aihya-food-man.onrender.com/api';
+  static const String _nextProd = 'https://line-oa-next.onrender.com/api';
   static const String _local = 'http://localhost:3001/api';
   // Use local Next.js API when running in debug mode on web (avoids CORS — Next.js adds headers)
   // static String get baseUrl => (kIsWeb && kDebugMode) ? _local : _prod;
   static String get baseUrl => _prod;
+  static String get nextBaseUrl => (kIsWeb && kDebugMode) ? _local : _nextProd;
+
   final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
+    connectTimeout: const Duration(seconds: 90),
+    receiveTimeout: const Duration(seconds: 90),
+  ))..interceptors.add(RetryInterceptor());
+
+  // Dio instance pointing to Next.js (has LINE push/broadcast endpoints with proper error handling)
+  final Dio _nextDio = Dio(BaseOptions(
+    baseUrl: nextBaseUrl,
     connectTimeout: const Duration(seconds: 90),
     receiveTimeout: const Duration(seconds: 90),
   ))..interceptors.add(RetryInterceptor());
@@ -88,11 +98,11 @@ class ApiService {
   }
 
   Future<void> broadcastFlex(String flexJson) async {
-    await _dio.post('/broadcast/flex', data: {'flexJson': flexJson});
+    await _nextDio.post('/broadcast/flex', data: {'flexJson': flexJson});
   }
 
   Future<void> pushFlex(String userId, String flexJson) async {
-    await _dio.post('/broadcast/push', data: {'userId': userId, 'flexJson': flexJson});
+    await _nextDio.post('/broadcast/push', data: {'userId': userId, 'flexJson': flexJson});
   }
 
   Future<Map<String, dynamic>> addIngredient(Map<String, dynamic> data) async {
