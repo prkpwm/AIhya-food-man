@@ -233,7 +233,7 @@ class _OrderCard extends ConsumerWidget {
           'type': 'box', 'layout': 'vertical', 'backgroundColor': color, 'paddingAll': '16px',
           'contents': [
             {'type': 'text', 'text': label, 'weight': 'bold', 'size': 'lg', 'color': '#ffffff'},
-            {'type': 'text', 'text': '#$shortId', 'size': 'sm', 'color': 'rgba(255,255,255,0.8)'},
+            {'type': 'text', 'text': '#$shortId', 'size': 'sm', 'color': '#FFFFFF'},
           ],
         },
         'body': {

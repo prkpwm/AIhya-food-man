@@ -102,7 +102,7 @@ class ApiService {
   }
 
   Future<void> pushFlex(String userId, String flexJson) async {
-    await _nextDio.post('/broadcast/push', data: {'userId': userId, 'flexJson': flexJson});
+    await _nextDio.post('/broadcast/flex', data: {'flexJson': flexJson});
   }
 
   Future<Map<String, dynamic>> addIngredient(Map<String, dynamic> data) async {
@@ -118,7 +118,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> updateOrderStatus(String id, String status) async {
-    final res = await _dio.patch('/orders/$id/status', data: {'status': status});
+    final res = await _nextDio.patch('/orders/$id/status', data: {'status': status});
     return res.data as Map<String, dynamic>;
   }
 
