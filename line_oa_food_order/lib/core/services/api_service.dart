@@ -1,6 +1,23 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
+class RetryInterceptor extends Interceptor {
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    if (err.type == DioExceptionType.connectionError ||
+        err.type == DioExceptionType.connectionTimeout) {
+      try {
+        await Future.delayed(const Duration(seconds: 2));
+        final res = await Dio(err.requestOptions.extra['baseOptions'] as BaseOptions? ??
+                BaseOptions(baseUrl: err.requestOptions.baseUrl))
+            .fetch(err.requestOptions);
+        return handler.resolve(res);
+      } catch (_) {}
+    }
+    handler.next(err);
+  }
+}
+
 class ApiService {
   static const String _prod = 'https://aihya-food-man.onrender.com/api';
   static String get baseUrl => _prod;
@@ -9,7 +26,8 @@ class ApiService {
     baseUrl: baseUrl,
     connectTimeout: const Duration(seconds: 90),
     receiveTimeout: const Duration(seconds: 90),
-  ));
+  ))..interceptors.add(RetryInterceptor());
+
 
   Future<Map<String, dynamic>> createMenu({
     required Map<String, String> data,
