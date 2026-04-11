@@ -4,7 +4,6 @@ import { env } from '@/lib/config/env';
 import * as orderService from '@/lib/services/order.service';
 import * as menuService from '@/lib/services/menu.service';
 import * as cartService from '@/lib/services/cart.service';
-import * as lineService from '@/lib/services/line.service';
 import { fuzzyFind } from '@/lib/utils/fuzzy';
 import { ensureInit } from '@/lib/init';
 
@@ -15,8 +14,12 @@ type WebhookEvent = line.webhook.Event;
 
 const MERCHANT_ID = 'merchant-001';
 
+function getClient() {
+  return new line.messagingApi.MessagingApiClient({ channelAccessToken: env.line.channelAccessToken });
+}
+
 async function replyMsg(replyToken: string, messages: LineMessage[]) {
-  await lineService.replyMessage(env.line.channelAccessToken, replyToken, messages);
+  await getClient().replyMessage({ replyToken, messages });
 }
 
 export async function POST(req: NextRequest) {

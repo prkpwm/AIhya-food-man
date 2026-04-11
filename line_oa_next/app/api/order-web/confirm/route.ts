@@ -32,7 +32,7 @@ function buildConfirmFlex(order: ReturnType<typeof orderService.createOrder>, pa
         type: 'box', layout: 'vertical', backgroundColor: '#FF6B00', paddingAll: '16px',
         contents: [
           { type: 'text', text: '✅ ยืนยันออเดอร์แล้ว', weight: 'bold', size: 'lg', color: '#ffffff' },
-          { type: 'text', text: `#${order.id.slice(-6)}`, size: 'sm', color: '#FFFFFF' },
+          { type: 'text', text: `#${order.id.slice(-6)}`, size: 'sm', color: 'rgba(255,255,255,0.8)' },
         ],
       },
       body: {
