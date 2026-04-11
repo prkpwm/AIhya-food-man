@@ -14,7 +14,7 @@ router.get('/', (_req: Request, res: Response): void => {
     price: m.price, imageUrl: m.imageUrl, maxSpiceLevel: m.maxSpiceLevel,
     addons: m.addons ?? [],
     portionOptions: m.portionOptions ?? [],
-  })));
+  }))).replace(/`/g, '\\`').replace(/<\/script>/gi, '<\\/script>');
 
   const menuCards = menus.map((m) => `
     <div class="menu-card" onclick="openDetail('${m.id}')">
@@ -217,7 +217,7 @@ router.get('/', (_req: Request, res: Response): void => {
         + portionHtml
         + '<div class="section">'
         + '<div class="section-title">หมายเหตุ</div>'
-        + '<input class="note-input" id="sheet-note" type="text" placeholder="เช่น ไม่ใส่ผัก, เพิ่มซอส..." value="' + sheetNote + '" oninput="sheetNote=this.value"/>'
+        + '<input class="note-input" id="sheet-note" type="text" placeholder="เพิ่มหมายเหตุ..." oninput="sheetNote=this.value"/>'
         + '</div>'
         + '<div class="section"><div class="qty-row">'
         + '<span class="section-title">จำนวน</span>'
