@@ -58,7 +58,7 @@ export default async function PaymentPage({ searchParams }: { searchParams: Prom
               </tr>
             </tbody>
           </table>
-          <button className="pay-btn" onClick={() => {}}>
+          <button className="pay-btn" id="pay-btn">
             ชำระเงิน ฿{order.totalPrice.toFixed(0)}
           </button>
           <p className="note">* ระบบชำระเงินจริงสามารถเชื่อมต่อ PromptPay / บัตรเครดิต ได้ในภายหลัง</p>

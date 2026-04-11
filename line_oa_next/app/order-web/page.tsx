@@ -95,15 +95,19 @@ export default function OrderWebPage() {
           <div className="cart-summary">
             ตะกร้า: <span className="cart-count" id="cart-count">0</span> รายการ · <span id="cart-total">฿0</span>
           </div>
-          <button className="checkout-btn" id="checkout-btn" disabled onClick={() => {}} >สั่งอาหาร</button>
+          <button className="checkout-btn" id="checkout-btn" disabled>สั่งอาหาร</button>
         </div>
-        <div className="overlay" id="overlay" onClick={() => {}} />
+        <div className="overlay" id="overlay" />
         <div className="sheet" id="sheet">
           <div id="sheet-content" />
         </div>
         <div className="toast" id="toast" />
         <script dangerouslySetInnerHTML={{ __html: `window.__MENUS__ = ${menusJson};` }} />
         <script src="/order-web-app.js" />
+        <script dangerouslySetInnerHTML={{ __html: `
+          document.getElementById('overlay').addEventListener('click', closeSheet);
+          document.getElementById('checkout-btn').addEventListener('click', checkout);
+        ` }} />
       </body>
     </html>
   );
