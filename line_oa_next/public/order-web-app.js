@@ -287,7 +287,6 @@ function cartChangeQty(idx, delta) {
 
 async function checkout() {
   if (cart.length === 0) return;
-  var btn = document.getElementById('cart-bar');
   try {
     var res = await fetch('/api/order-web/confirm', {
       method: 'POST',
@@ -296,50 +295,9 @@ async function checkout() {
     });
     var data = await res.json();
     if (!data.success) throw new Error('failed');
-    var d = data.data;
-
-    var itemRows = cart.map(function(i) {
-      var label = i.menuName + ' ×' + i.quantity
-        + (i.spiceLevel > 0 ? ' (เผ็ด ' + i.spiceLevel + ')' : '')
-        + (i.customNote ? ' [' + i.customNote + ']' : '');
-      return { type: 'box', layout: 'baseline', contents: [
-        { type: 'text', text: label, size: 'sm', color: '#555555', flex: 4 },
-        { type: 'text', text: '฿' + (i.unitPrice * i.quantity).toFixed(0), align: 'end', size: 'sm', flex: 2 },
-      ]};
-    });
-
-    var waitText = d.estimatedWaitMinutes > 0
-      ? [{ type: 'text', text: '⏱ รอประมาณ ' + d.estimatedWaitMinutes + ' นาที', size: 'sm', color: '#999999' }]
-      : [];
-
-    var flex = {
-      type: 'flex', altText: 'ยืนยันออเดอร์ #' + d.shortId + ' — ฿' + d.totalPrice.toFixed(0),
-      contents: {
-        type: 'bubble',
-        header: { type: 'box', layout: 'vertical', backgroundColor: '#FF6B00', paddingAll: '16px', contents: [
-          { type: 'text', text: 'ยืนยันออเดอร์แล้ว', weight: 'bold', size: 'lg', color: '#ffffff' },
-          { type: 'text', text: '#' + d.shortId, size: 'sm', color: 'rgba(255,255,255,0.8)' },
-        ]},
-        body: { type: 'box', layout: 'vertical', spacing: 'md', contents: itemRows.concat([
-          { type: 'separator', margin: 'sm' },
-          { type: 'box', layout: 'baseline', contents: [
-            { type: 'text', text: 'ยอดรวม', size: 'sm', color: '#555555', flex: 4 },
-            { type: 'text', text: '฿' + d.totalPrice.toFixed(0), align: 'end', size: 'lg', weight: 'bold', color: '#FF6B00', flex: 2 },
-          ]},
-        ].concat(waitText))},
-        footer: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
-          { type: 'button', style: 'primary', color: '#FF6B00', action: { type: 'uri', label: 'ชำระเงิน', uri: d.paymentUrl } },
-          { type: 'button', style: 'secondary', action: { type: 'message', label: 'ติดตามสถานะ', text: 'สถานะ #' + d.shortId } },
-        ]},
-      },
-    };
-
-    await fetch('/api/broadcast/push', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: userId, flexJson: JSON.stringify(flex) }),
-    });
-
+    cart = [];
+    updateCartBar();
+    updateMenuBadges();
     showToast('สั่งอาหารสำเร็จ! 🎉');
     setTimeout(function() { liff.closeWindow(); }, 1800);
   } catch(e) {
