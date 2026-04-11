@@ -2,13 +2,13 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 class ApiService {
-  static const String _prod = 'https://aihya-food-man.onrender.com';
+  static const String _prod = 'https://aihya-food-man.onrender.com/api';
   static String get baseUrl => _prod;
 
   final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
+    connectTimeout: const Duration(seconds: 90),
+    receiveTimeout: const Duration(seconds: 90),
   ));
 
   Future<Map<String, dynamic>> createMenu({

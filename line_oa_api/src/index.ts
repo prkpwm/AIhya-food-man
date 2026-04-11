@@ -39,7 +39,8 @@ export function pushLog(entry: LogEntry): void {
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
-app.use(cors());
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }));
+app.options('*', cors());
 app.use(traceMiddleware);
 app.use('/images', express.static('public/images'));
 app.use('/images/menus', express.static('public/images/menus'));
