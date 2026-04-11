@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as menuService from '../services/menu.service';
 import * as orderService from '../services/order.service';
-import * as lineService from '../services/line.service';
 import { env } from '../config/env';
 import { OrderItem } from '../types';
 
@@ -97,7 +96,7 @@ router.get('/', (_req: Request, res: Response): void => {
           liff.login();
         }
       } catch(e) {
-        console.error('LIFF init failed', e);
+        // LIFF init failed silently
       }
     }
 
@@ -128,20 +127,69 @@ router.get('/', (_req: Request, res: Response): void => {
       btn.textContent = 'กำลังส่ง...';
 
       try {
+        // 1. create order on backend
         const res = await fetch('/order-web/confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, items, merchantId: '${merchantId}' }),
         });
         const data = await res.json();
-        if (data.success) {
-          showToast('✅ สั่งอาหารสำเร็จ!');
-          setTimeout(() => liff.closeWindow(), 1500);
-        } else {
-          showToast('เกิดข้อผิดพลาด กรุณาลองใหม่');
-          btn.disabled = false;
-          btn.textContent = 'ยืนยันการสั่ง';
-        }
+        if (!data.success) throw new Error('order failed');
+
+        const { shortId, totalPrice, estimatedWaitMinutes, paymentUrl } = data.data;
+
+        // 2. build flex on frontend
+        const itemRows = items.map(i => ({
+          type: 'box', layout: 'baseline',
+          contents: [
+            { type: 'text', text: i.menuName + ' ×' + i.quantity, size: 'sm', color: '#555555', flex: 4 },
+            { type: 'text', text: '฿' + (i.unitPrice * i.quantity).toFixed(0), align: 'end', size: 'sm', flex: 2 },
+          ],
+        }));
+
+        const flex = {
+          type: 'flex',
+          altText: '✅ ยืนยันออเดอร์ #' + shortId + ' — ฿' + totalPrice.toFixed(0),
+          contents: {
+            type: 'bubble',
+            header: {
+              type: 'box', layout: 'vertical', backgroundColor: '#FF6B00', paddingAll: '16px',
+              contents: [
+                { type: 'text', text: '✅ ยืนยันออเดอร์แล้ว', weight: 'bold', size: 'lg', color: '#ffffff' },
+                { type: 'text', text: '#' + shortId, size: 'sm', color: 'rgba(255,255,255,0.8)' },
+              ],
+            },
+            body: {
+              type: 'box', layout: 'vertical', spacing: 'md',
+              contents: [
+                { type: 'box', layout: 'vertical', margin: 'sm', contents: itemRows },
+                { type: 'separator', margin: 'sm' },
+                { type: 'box', layout: 'baseline', contents: [
+                  { type: 'text', text: 'ยอดรวม', size: 'sm', color: '#555555', flex: 4 },
+                  { type: 'text', text: '฿' + totalPrice.toFixed(0), align: 'end', size: 'lg', weight: 'bold', color: '#FF6B00', flex: 2 },
+                ]},
+                ...(estimatedWaitMinutes > 0 ? [{ type: 'text', text: '⏱ รอประมาณ ' + estimatedWaitMinutes + ' นาที', size: 'sm', color: '#999999' }] : []),
+              ],
+            },
+            footer: {
+              type: 'box', layout: 'vertical', spacing: 'sm',
+              contents: [
+                { type: 'button', style: 'primary', color: '#FF6B00', action: { type: 'uri', label: '💳 ชำระเงิน', uri: paymentUrl } },
+                { type: 'button', style: 'secondary', action: { type: 'message', label: '📦 ติดตามสถานะ', text: 'สถานะ #' + shortId } },
+              ],
+            },
+          },
+        };
+
+        // 3. push flex to LINE via backend
+        await fetch('/broadcast/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, flexJson: JSON.stringify(flex) }),
+        });
+
+        showToast('✅ สั่งอาหารสำเร็จ!');
+        setTimeout(() => liff.closeWindow(), 1500);
       } catch(e) {
         showToast('เกิดข้อผิดพลาด กรุณาลองใหม่');
         btn.disabled = false;
@@ -162,7 +210,7 @@ router.get('/', (_req: Request, res: Response): void => {
 </html>`);
 });
 
-// ─── POST /order-web/confirm — create order + push confirm flex to LINE ───────
+// ─── POST /order-web/confirm — create order + let frontend push flex ─────────
 
 router.post('/confirm', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -178,18 +226,21 @@ router.post('/confirm', async (req: Request, res: Response): Promise<void> => {
     }
 
     const order = orderService.createOrder(mid ?? merchantId, userId, 'ลูกค้า LINE', items);
+    const paymentUrl = `${env.renderExternalUrl}/payment?orderId=${order.id}`;
 
-    // push confirm flex with payment button to LINE chat
-    await lineService.pushOrderConfirmWithPayment(
-      env.line.channelAccessToken,
-      userId,
-      order,
-      env.renderExternalUrl,
-    );
-
-    console.table({ step: 'order-web-confirm', orderId: order.id, userId: userId.slice(0, 8), total: order.totalPrice });
-    res.json({ success: true, data: { orderId: order.id } });
-  } catch (err) {
+    // return order data + paymentUrl so the LIFF page builds and pushes the flex itself
+    res.json({
+      success: true,
+      data: {
+        orderId: order.id,
+        shortId: order.id.slice(-6),
+        totalPrice: order.totalPrice,
+        estimatedWaitMinutes: order.estimatedWaitMinutes,
+        items: order.items,
+        paymentUrl,
+      },
+    });
+  } catch {
     res.status(500).json({ code: '500', en: 'Internal error', th: 'ข้อผิดพลาด' });
   }
 });

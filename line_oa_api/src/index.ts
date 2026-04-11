@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { env } from './config/env';
 import { errorHandler, notFound } from './middleware/error';
+import { traceMiddleware } from './middleware/trace';
 import webhookRouter from './routes/webhook';
 import ordersRouter from './routes/orders';
 import menusRouter from './routes/menus';
@@ -17,10 +18,10 @@ const app = express();
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(cors());
+app.use(traceMiddleware);
 app.use('/images', express.static('public/images'));
 app.use('/images/menus', express.static('public/images/menus'));
 
-// increase body limit for base64 image uploads
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -29,17 +30,11 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 
-// keep-alive for Render free tier (prevents spin-down)
 if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
   const keepAliveUrl = `${process.env.RENDER_EXTERNAL_URL}/health`;
   setInterval(async () => {
-    try {
-      await fetch(keepAliveUrl);
-      console.table({ step: 'keep-alive', url: keepAliveUrl });
-    } catch {
-      // ignore
-    }
-  }, 14 * 60 * 1000); // every 14 minutes
+    try { await fetch(keepAliveUrl); } catch { /* ignore */ }
+  }, 14 * 60 * 1000);
 }
 
 app.use('/webhook', webhookRouter);
@@ -60,11 +55,6 @@ app.use(errorHandler);
 
 app.listen(env.port, () => {
   seedData();
-  console.table({
-    step: 'server-start',
-    port: env.port,
-    env: process.env.NODE_ENV ?? 'development',
-  });
 });
 
 export default app;

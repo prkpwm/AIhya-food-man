@@ -80,7 +80,6 @@ async function _createAndDeploy(
   const blobClient = getBlobClient();
 
   const { richMenuId } = await client.createRichMenu(menuRequest);
-  console.table({ step: 'rich-menu-created', richMenuId });
 
   const rawBuffer = imageBuffer.buffer instanceof SharedArrayBuffer
     ? (imageBuffer.buffer.slice(0) as unknown as ArrayBuffer)
@@ -88,10 +87,8 @@ async function _createAndDeploy(
 
   const blob = new Blob([rawBuffer], { type: 'image/jpeg' });
   await blobClient.setRichMenuImage(richMenuId, blob);
-  console.table({ step: 'rich-menu-image-uploaded', richMenuId, size: imageBuffer.length });
 
   await client.setDefaultRichMenu(richMenuId);
-  console.table({ step: 'rich-menu-deployed', richMenuId });
 
   return richMenuId;
 }
@@ -105,5 +102,4 @@ export async function listRichMenus(): Promise<RichMenuResponse[]> {
 export async function deleteRichMenu(richMenuId: string): Promise<void> {
   const client = getClient();
   await client.deleteRichMenu(richMenuId);
-  console.table({ step: 'rich-menu-deleted', richMenuId });
 }

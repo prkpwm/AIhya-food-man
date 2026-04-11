@@ -1,7 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import * as richMenuService from '../services/rich_menu.service';
-import { env } from '../config/env';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -9,9 +8,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 // GET /rich-menu — list all
 router.get('/', async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    console.table({ step: 'rich-menu-list', action: 'start' });
     const menus = await richMenuService.listRichMenus();
-    console.table({ step: 'rich-menu-list', count: menus.length });
     res.json({ success: true, data: menus });
   } catch (err) {
     next(err);
@@ -24,15 +21,6 @@ router.post('/deploy/customer', upload.single('image'), async (req: Request, res
     const shopName = req.body['shopName'] as string;
     const file = req.file;
 
-    console.table({
-      step: 'deploy-customer',
-      shopName,
-      hasFile: !!file,
-      mimetype: file?.mimetype ?? 'none',
-      fileSize: file?.size ?? 0,
-      tokenLength: env.line.channelAccessToken.length,
-    });
-
     if (!shopName) {
       res.status(400).json({ code: '400', en: 'shopName required', th: 'ข้อมูลไม่ครบ' });
       return;
@@ -43,15 +31,9 @@ router.post('/deploy/customer', upload.single('image'), async (req: Request, res
     }
 
     const large = req.body['large'] === 'true';
-    const menuRequest = richMenuService.buildCustomerMenu(shopName, large);
-    console.table({ step: 'deploy-customer', action: 'menu-built', areas: menuRequest.areas?.length ?? 0, large });
-
-    const richMenuId = await richMenuService.deployCustomerMenu(shopName, file.buffer);
-    console.table({ step: 'deploy-customer', action: 'done', richMenuId });
-
+    const richMenuId = await richMenuService.deployCustomerMenu(shopName, file.buffer, large);
     res.json({ success: true, data: { richMenuId } });
   } catch (err) {
-    console.table({ step: 'deploy-customer', error: String(err) });
     next(err);
   }
 });
@@ -62,15 +44,6 @@ router.post('/deploy/merchant', upload.single('image'), async (req: Request, res
     const shopName = req.body['shopName'] as string;
     const file = req.file;
 
-    console.table({
-      step: 'deploy-merchant',
-      shopName,
-      hasFile: !!file,
-      mimetype: file?.mimetype ?? 'none',
-      fileSize: file?.size ?? 0,
-      tokenLength: env.line.channelAccessToken.length,
-    });
-
     if (!shopName) {
       res.status(400).json({ code: '400', en: 'shopName required', th: 'ข้อมูลไม่ครบ' });
       return;
@@ -81,15 +54,9 @@ router.post('/deploy/merchant', upload.single('image'), async (req: Request, res
     }
 
     const large = req.body['large'] === 'true';
-    const menuRequest = richMenuService.buildMerchantMenu(shopName, large);
-    console.table({ step: 'deploy-merchant', action: 'menu-built', areas: menuRequest.areas?.length ?? 0, large });
-
-    const richMenuId = await richMenuService.deployMerchantMenu(shopName, file.buffer);
-    console.table({ step: 'deploy-merchant', action: 'done', richMenuId });
-
+    const richMenuId = await richMenuService.deployMerchantMenu(shopName, file.buffer, large);
     res.json({ success: true, data: { richMenuId } });
   } catch (err) {
-    console.table({ step: 'deploy-merchant', error: String(err) });
     next(err);
   }
 });
@@ -98,12 +65,9 @@ router.post('/deploy/merchant', upload.single('image'), async (req: Request, res
 router.delete('/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = req.params['id'] ?? '';
-    console.table({ step: 'rich-menu-delete', richMenuId: id });
     await richMenuService.deleteRichMenu(id);
-    console.table({ step: 'rich-menu-delete', action: 'done', richMenuId: id });
     res.json({ success: true });
   } catch (err) {
-    console.table({ step: 'rich-menu-delete', error: String(err) });
     next(err);
   }
 });

@@ -64,7 +64,6 @@ export async function generateRichMenuImage(
     .jpeg({ quality: 85 })
     .toBuffer();
 
-  console.table({ step: 'canvas-generated', size: result.length, buttons: areas.length, H });
   return result;
 }
 

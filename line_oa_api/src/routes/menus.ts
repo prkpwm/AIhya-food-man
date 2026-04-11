@@ -63,7 +63,6 @@ router.post('/', upload.single('image'), (req: Request, res: Response): void => 
     imageUrl,
   });
 
-  console.table({ step: 'menu-created', id: menu.id, name: menu.name, hasImage: !!imageUrl });
   res.status(201).json({ success: true, data: menu });
 });
 

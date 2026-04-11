@@ -30,14 +30,6 @@ export function createOrder(
 
   orders.set(order.id, order);
 
-  console.table({
-    step: 'order-created',
-    orderId: order.id,
-    customer: customerName,
-    total: totalPrice,
-    items: items.length,
-  });
-
   return order;
 }
 
@@ -61,12 +53,6 @@ export function updateOrderStatus(id: string, status: OrderStatus): Order | null
   };
 
   orders.set(id, updated);
-
-  console.table({
-    step: 'order-status-updated',
-    orderId: id,
-    status,
-  });
 
   return updated;
 }

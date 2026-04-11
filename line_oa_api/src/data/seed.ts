@@ -116,6 +116,4 @@ export function seedData(): void {
   orderService.createOrder(MERCHANT_ID, 'cust-003', 'คุณวิชัย', [
     { menuId: 'menu-008', menuName: 'ราดหน้าหมูแดงหมูกรอบ', quantity: 1, unitPrice: 75, spiceLevel: 0, customNote: null },
   ]);
-
-  console.table({ step: 'seed-complete', menus: menus.length, ingredients: ingredients.length, orders: 3 });
 }

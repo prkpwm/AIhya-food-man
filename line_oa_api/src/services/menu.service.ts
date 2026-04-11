@@ -44,13 +44,6 @@ export function updateStock(id: string, quantity: number): Ingredient | null {
   const updated: Ingredient = { ...ingredient, quantity };
   ingredients.set(id, updated);
 
-  console.table({
-    step: 'stock-updated',
-    ingredientId: id,
-    name: ingredient.name,
-    quantity,
-  });
-
   return updated;
 }
 

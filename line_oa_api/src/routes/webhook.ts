@@ -31,7 +31,6 @@ router.post('/', lazyLineMiddleware, async (req: Request, res: Response): Promis
 // ─── Event handler ────────────────────────────────────────────────────────────
 
 async function handleEvent(event: line.WebhookEvent): Promise<void> {
-  console.table({ step: 'webhook-event', type: event.type, source: event.source.type });
   if (event.type !== 'message' || event.message.type !== 'text') return;
 
   const replyToken = event.replyToken;
@@ -39,7 +38,6 @@ async function handleEvent(event: line.WebhookEvent): Promise<void> {
   const text = event.message.text.trim();
   const merchantId = 'merchant-001';
 
-  console.table({ step: 'webhook-text', text, userId: userId.slice(0, 8) });
   await handleTextMessage(replyToken, userId, text, merchantId);
 }
 

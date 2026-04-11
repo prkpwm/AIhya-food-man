@@ -7,9 +7,6 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
-  console.table({ step: 'error-handler', message: err.message, stack: err.stack });
-
-  // extract meaningful message from LINE API errors
   const message = (err as { originalError?: { message?: string } }).originalError?.message
     ?? err.message
     ?? 'Internal server error';
