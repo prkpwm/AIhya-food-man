@@ -320,7 +320,7 @@ function toggleSoldOut() {
   hideSoldOut = !hideSoldOut;
   var btn = document.getElementById('sold-out-toggle');
   if (btn) {
-    btn.textContent = hideSoldOut ? 'แสดงหมด' : 'ซ่อนหมด';
+    btn.textContent = hideSoldOut ? 'แสดงทั้งหมด' : 'ซ่อนเมนูหมด';
     if (hideSoldOut) btn.classList.add('hiding');
     else btn.classList.remove('hiding');
   }
