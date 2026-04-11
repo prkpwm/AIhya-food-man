@@ -11,10 +11,19 @@ export async function POST(req: NextRequest) {
     if (!env.line.channelAccessToken) {
       return NextResponse.json({ code: '500', en: 'LINE token not configured', th: 'ไม่มี token' }, { status: 500 });
     }
-    const result = await lineService.pushFlex(env.line.channelAccessToken, userId, JSON.parse(flexJson));
+    const flex = JSON.parse(flexJson);
+    console.table({ step: 'before-push', userId, flexType: flex?.type ?? 'unknown' });
+    console.log('[broadcast/push] flexJson:', JSON.stringify(flex, null, 2));
+
+    const result = await lineService.pushFlex(env.line.channelAccessToken, userId, flex);
+
+    console.table({ step: 'after-push', userId, success: true });
+    console.log('[broadcast/push] LINE result:', JSON.stringify(result, null, 2));
+
     return NextResponse.json({ success: true, result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'unknown error';
+    console.table({ step: 'error', msg });
     return NextResponse.json({ code: '500', en: msg, th: 'ข้อผิดพลาด' }, { status: 500 });
   }
 }
