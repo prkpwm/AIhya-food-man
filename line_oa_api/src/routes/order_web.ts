@@ -12,6 +12,8 @@ router.get('/', (_req: Request, res: Response): void => {
   const menusJson = JSON.stringify(menus.map((m) => ({
     id: m.id, name: m.name, description: m.description,
     price: m.price, imageUrl: m.imageUrl, maxSpiceLevel: m.maxSpiceLevel,
+    addons: m.addons ?? [],
+    portionOptions: m.portionOptions ?? [],
   })));
 
   const menuCards = menus.map((m) => `
@@ -76,14 +78,16 @@ router.get('/', (_req: Request, res: Response): void => {
     .radio,.checkbox{width:20px;height:20px;border-radius:50%;border:2px solid #ddd;flex-shrink:0;display:flex;align-items:center;justify-content:center}
     .checkbox{border-radius:5px}
     .radio.sel,.checkbox.sel{border-color:#FF6B00;background:#FF6B00}
-    .radio.sel::after,.checkbox.sel::after{content:'';width:8px;height:8px;background:#fff;border-radius:50%}
-    .checkbox.sel::after{border-radius:2px}
+    .radio.sel::after{content:'';width:8px;height:8px;background:#fff;border-radius:50%}
+    .checkbox.sel::after{content:'✓';color:#fff;font-size:13px;font-weight:700}
     /* qty row */
     .qty-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
     .qty-ctrl{display:flex;align-items:center;gap:16px}
     .qty-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid #ddd;background:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
     .qty-num{font-size:18px;font-weight:700;min-width:24px;text-align:center}
     .add-cart-btn{width:100%;padding:16px;background:#06C755;color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;margin-bottom:8px}
+    .note-input{width:100%;padding:10px 14px;border:1.5px solid #eee;border-radius:12px;font-size:14px;margin-top:8px;outline:none;background:#fafafa}
+    .note-input:focus{border-color:#FF6B00}
     /* toast */
     .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap}
     .toast.show{opacity:1}
@@ -110,12 +114,14 @@ router.get('/', (_req: Request, res: Response): void => {
 
   <script>
     const MENUS = ${menusJson};
-    const cart = []; // { menuId, menuName, quantity, unitPrice, spiceLevel, customNote, addons }
+    const cart = [];
     let userId = null;
     let currentMenu = null;
     let sheetQty = 1;
-    let sheetSpice = -1; // -1 = not selected
+    let sheetSpice = -1;
     let sheetAddons = new Set();
+    let sheetPortion = null;
+    let sheetNote = '';
 
     async function initLiff() {
       try {
@@ -133,6 +139,8 @@ router.get('/', (_req: Request, res: Response): void => {
       sheetQty = 1;
       sheetSpice = currentMenu.maxSpiceLevel > 0 ? -1 : 0;
       sheetAddons = new Set();
+      sheetPortion = currentMenu.portionOptions && currentMenu.portionOptions.length > 0 ? null : 'none';
+      sheetNote = '';
       renderSheet();
       document.getElementById('overlay').classList.add('show');
       document.getElementById('sheet').classList.add('show');
@@ -145,7 +153,6 @@ router.get('/', (_req: Request, res: Response): void => {
 
     function renderSheet() {
       const m = currentMenu;
-      const total = (m.price * sheetQty).toFixed(0);
       const spiceLabels = ['ไม่เผ็ด','เผ็ดน้อย','เผ็ดกลาง','เผ็ดมาก','เผ็ดมากกก'];
 
       let spiceHtml = '';
@@ -163,9 +170,42 @@ router.get('/', (_req: Request, res: Response): void => {
           + '<div class="section-sub">กรุณาเลือก 1 ข้อ · ต้องระบุ</div>' + rows + '</div>';
       }
 
+      let addonsHtml = '';
+      if (m.addons && m.addons.length > 0) {
+        let rows = '';
+        m.addons.forEach(function(a) {
+          const sel = sheetAddons.has(a.id) ? 'sel' : '';
+          rows += '<div class="option-row" onclick="toggleAddon(\'' + a.id + '\')">'
+            + '<div class="option-left">'
+            + '<div class="checkbox ' + sel + '" id="addon-' + a.id + '"></div>'
+            + '<span class="option-label">' + a.name + '</span>'
+            + '</div><span class="option-price">+฿' + a.price + '</span></div>';
+        });
+        addonsHtml = '<div class="section"><div class="section-title">เลือก</div>'
+          + '<div class="section-sub">เลือกได้หลายข้อ</div>' + rows + '</div>';
+      }
+
+      let portionHtml = '';
+      if (m.portionOptions && m.portionOptions.length > 0) {
+        let rows = '';
+        m.portionOptions.forEach(function(p) {
+          const sel = sheetPortion === p.id ? 'sel' : '';
+          const priceLabel = p.extraPrice > 0 ? '+฿' + p.extraPrice : '฿0';
+          rows += '<div class="option-row" onclick="selectPortion(\'' + p.id + '\')">'
+            + '<div class="option-left">'
+            + '<div class="radio ' + sel + '" id="portion-' + p.id + '"></div>'
+            + '<span class="option-label">' + p.name + '</span>'
+            + '</div><span class="option-price">' + priceLabel + '</span></div>';
+        });
+        portionHtml = '<div class="section"><div class="section-title">ธรรมดา/พิเศษ</div>'
+          + '<div class="section-sub">กรุณาเลือก 1 ข้อ</div>' + rows + '</div>';
+      }
+
       const heroHtml = m.imageUrl
         ? '<img class="sheet-hero" src="' + m.imageUrl + '" alt="' + m.name + '"/>'
         : '<div class="sheet-hero-placeholder">🍽️</div>';
+
+      const total = calcTotal().toFixed(0);
 
       document.getElementById('sheet-content').innerHTML = heroHtml
         + '<div class="sheet-body">'
@@ -173,6 +213,12 @@ router.get('/', (_req: Request, res: Response): void => {
         + '<div class="sheet-desc">' + m.description + '</div>'
         + '<div class="sheet-price">฿' + m.price.toFixed(0) + '</div>'
         + spiceHtml
+        + addonsHtml
+        + portionHtml
+        + '<div class="section">'
+        + '<div class="section-title">หมายเหตุ</div>'
+        + '<input class="note-input" id="sheet-note" type="text" placeholder="เช่น ไม่ใส่ผัก, เพิ่มซอส..." value="' + sheetNote + '" oninput="sheetNote=this.value"/>'
+        + '</div>'
         + '<div class="section"><div class="qty-row">'
         + '<span class="section-title">จำนวน</span>'
         + '<div class="qty-ctrl">'
@@ -185,8 +231,32 @@ router.get('/', (_req: Request, res: Response): void => {
       updateAddCartBtn();
     }
 
+    function calcTotal() {
+      const m = currentMenu;
+      let price = m.price;
+      if (m.portionOptions && sheetPortion) {
+        const p = m.portionOptions.find(function(x) { return x.id === sheetPortion; });
+        if (p) price += p.extraPrice;
+      }
+      if (m.addons) {
+        m.addons.forEach(function(a) { if (sheetAddons.has(a.id)) price += a.price; });
+      }
+      return price * sheetQty;
+    }
+
     function selectSpice(level) {
       sheetSpice = level;
+      renderSheet();
+    }
+
+    function selectPortion(id) {
+      sheetPortion = id;
+      renderSheet();
+    }
+
+    function toggleAddon(id) {
+      if (sheetAddons.has(id)) sheetAddons.delete(id);
+      else sheetAddons.add(id);
       renderSheet();
     }
 
@@ -200,29 +270,36 @@ router.get('/', (_req: Request, res: Response): void => {
       const m = currentMenu;
       if (!m) return;
       const needSpice = m.maxSpiceLevel > 0 && sheetSpice < 0;
+      const needPortion = m.portionOptions && m.portionOptions.length > 0 && !sheetPortion;
       const btn = document.getElementById('add-cart-btn');
       if (!btn) return;
-      const total = (m.price * sheetQty).toFixed(0);
-      btn.textContent = needSpice ? 'กรุณาเลือกระดับความเผ็ด' : 'ใส่ตะกร้า · ฿' + total;
-      btn.disabled = needSpice;
-      btn.style.background = needSpice ? '#ccc' : '#06C755';
+      const total = calcTotal().toFixed(0);
+      if (needSpice) { btn.textContent = 'กรุณาเลือกระดับความเผ็ด'; }
+      else if (needPortion) { btn.textContent = 'กรุณาเลือกธรรมดา/พิเศษ'; }
+      else { btn.textContent = 'ใส่ตะกร้า · ฿' + total; }
+      btn.disabled = needSpice || needPortion;
+      btn.style.background = (needSpice || needPortion) ? '#ccc' : '#06C755';
     }
 
     function addToCart() {
       const m = currentMenu;
       if (!m) return;
       if (m.maxSpiceLevel > 0 && sheetSpice < 0) return;
+      if (m.portionOptions && m.portionOptions.length > 0 && !sheetPortion) return;
 
-      const existing = cart.find(i => i.menuId === m.id && i.spiceLevel === sheetSpice);
-      if (existing) {
-        existing.quantity += sheetQty;
-      } else {
-        cart.push({ menuId: m.id, menuName: m.name, quantity: sheetQty, unitPrice: m.price, spiceLevel: sheetSpice, customNote: null });
-      }
+      const selectedAddons = m.addons ? m.addons.filter(function(a) { return sheetAddons.has(a.id); }) : [];
+      const portionLabel = m.portionOptions && sheetPortion
+        ? (m.portionOptions.find(function(p) { return p.id === sheetPortion; }) || {}).name || ''
+        : '';
+      const addonLabel = selectedAddons.map(function(a) { return a.name; }).join(', ');
+      const note = [portionLabel, addonLabel, sheetNote.trim()].filter(Boolean).join(' · ') || null;
+      const unitPrice = calcTotal() / sheetQty;
+
+      cart.push({ menuId: m.id, menuName: m.name, quantity: sheetQty, unitPrice: unitPrice, spiceLevel: sheetSpice, customNote: note });
 
       closeSheet();
       updateCartBar();
-      showToast('✅ เพิ่ม ' + m.name + ' ×' + sheetQty + ' แล้ว');
+      showToast('เพิ่ม ' + m.name + ' x' + sheetQty + ' แล้ว');
     }
 
     function updateCartBar() {
