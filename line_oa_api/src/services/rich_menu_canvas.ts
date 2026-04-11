@@ -37,7 +37,7 @@ function buildSvgOverlay(areas: ButtonArea[], H: number): Buffer {
       <rect x="${a.x + 30}" y="${cy - 46}" width="${a.width - 60}" height="60"
             rx="30" fill="rgba(0,0,0,0.6)"/>
       <text x="${cx}" y="${cy + 6}"
-            font-family="Arial, sans-serif" font-size="54" font-weight="bold"
+            font-family="TlwgTypo, Garuda, Norasi, 'Noto Sans Thai', sans-serif" font-size="54" font-weight="bold"
             fill="white" text-anchor="middle" dominant-baseline="middle">${a.label}</text>`;
   });
 

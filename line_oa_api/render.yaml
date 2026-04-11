@@ -4,7 +4,7 @@ services:
     runtime: node
     region: singapore
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: apt-get install -y fonts-thai-tlwg && npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
@@ -18,3 +18,5 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      - key: LIFF_URL
+        sync: false
