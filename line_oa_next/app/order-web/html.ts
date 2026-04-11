@@ -1,10 +1,6 @@
-import { ensureInit } from '@/lib/init';
-import { getMenusByMerchant } from '@/lib/services/menu.service';
+import { Menu } from '@/lib/types';
 
-ensureInit();
-
-export default function OrderWebPage() {
-  const menus = getMenusByMerchant('merchant-001').filter((m) => m.isAvailable);
+export function buildOrderWebHtml(menus: Menu[]): string {
   const categories = [...new Set(menus.map((m) => m.category))];
 
   const menusJson = JSON.stringify(menus.map((m) => ({
@@ -13,12 +9,13 @@ export default function OrderWebPage() {
     category: m.category, addons: m.addons ?? [], portionOptions: m.portionOptions ?? [],
   })));
 
-  const menuCards = menus.map((m) => (
-    `<div class="menu-card" data-menuid="${m.id}" data-category="${m.category}" onclick="openDetail(this.dataset.menuid)">
+  const menuCards = menus.map((m) => {
+    const img = m.imageUrl
+      ? `<img src="${m.imageUrl}" alt="${m.name}" loading="lazy"/>`
+      : '<div class="no-img">🍽️</div>';
+    return `<div class="menu-card" data-menuid="${m.id}" data-category="${m.category}" onclick="openDetail(this.dataset.menuid)">
       <div class="menu-card-img-wrap">
-        ${m.imageUrl
-          ? `<img src="${m.imageUrl}" alt="${m.name}" loading="lazy"/>`
-          : '<div class="no-img">🍽️</div>'}
+        ${img}
         <div class="menu-badge" id="badge-${m.id}" style="display:none">0</div>
       </div>
       <div class="menu-card-body">
@@ -29,74 +26,65 @@ export default function OrderWebPage() {
           <button class="add-btn" data-menuid="${m.id}" onclick="event.stopPropagation();openDetail(this.dataset.menuid)">+</button>
         </div>
       </div>
-    </div>`
-  )).join('');
+    </div>`;
+  }).join('');
 
   const catTabs = categories.map((c, i) =>
     `<button class="cat-tab${i === 0 ? ' active' : ''}" data-cat="${c}" onclick="filterCat(this)">${c}</button>`
   ).join('');
 
-  return (
-    <html lang="th">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0" />
-        <title>สั่งอาหาร</title>
-        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-        <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" />
-        <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      </head>
-      <body>
-        {/* ── Header ── */}
-        <div className="header">
-          <div className="header-top">
-            <div className="shop-name">🍽️ สั่งอาหาร</div>
-          </div>
-          <div className="search-bar">
-            <span className="search-icon">🔍</span>
-            <input id="search-input" type="text" placeholder="ค้นหาเมนู..." />
-          </div>
-          <div className="cat-tabs" id="cat-tabs" dangerouslySetInnerHTML={{ __html: catTabs }} />
-        </div>
+  return `<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <title>สั่งอาหาร</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>${CSS}</style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-top"><div class="shop-name">🍽️ สั่งอาหาร</div></div>
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input id="search-input" type="text" placeholder="ค้นหาเมนู..."/>
+    </div>
+    <div class="cat-tabs" id="cat-tabs">${catTabs}</div>
+  </div>
 
-        {/* ── Menu grid ── */}
-        <div className="menu-grid" id="menu-grid" dangerouslySetInnerHTML={{ __html: menuCards }} />
+  <div class="menu-grid" id="menu-grid">${menuCards}</div>
 
-        {/* ── Cart bar ── */}
-        <div className="cart-bar" id="cart-bar" style={{ display: 'none' }}>
-          <div className="cart-bar-left">
-            <span className="cart-bar-count" id="cart-count">0</span>
-            <span className="cart-bar-label">รายการ</span>
-          </div>
-          <div className="cart-bar-center" id="cart-total">฿0</div>
-          <div className="cart-bar-right">ดูตะกร้า →</div>
-        </div>
+  <div class="cart-bar" id="cart-bar" style="display:none">
+    <div class="cart-bar-left">
+      <span class="cart-bar-count" id="cart-count">0</span>
+      <span class="cart-bar-label">รายการ</span>
+    </div>
+    <div class="cart-bar-center" id="cart-total">฿0</div>
+    <div class="cart-bar-right">ดูตะกร้า →</div>
+  </div>
 
-        {/* ── Overlays & sheets ── */}
-        <div className="overlay" id="overlay" />
-        <div className="sheet" id="sheet"><div id="sheet-content" /></div>
-        <div className="overlay" id="cart-overlay" />
-        <div className="sheet" id="cart-sheet"><div id="cart-content" /></div>
-        <div className="toast" id="toast" />
+  <div class="overlay" id="overlay"></div>
+  <div class="sheet" id="sheet"><div id="sheet-content"></div></div>
+  <div class="overlay" id="cart-overlay"></div>
+  <div class="sheet" id="cart-sheet"><div id="cart-content"></div></div>
+  <div class="toast" id="toast"></div>
 
-        <script dangerouslySetInnerHTML={{ __html: `window.__MENUS__ = ${menusJson};` }} />
-        <script src="/order-web-app.js" />
-        <script dangerouslySetInnerHTML={{ __html: `
-          document.getElementById('overlay').addEventListener('click', closeSheet);
-          document.getElementById('cart-overlay').addEventListener('click', closeCartSheet);
-          document.getElementById('cart-bar').addEventListener('click', openCartSheet);
-          document.getElementById('search-input').addEventListener('input', function() { searchMenus(this.value); });
-        ` }} />
-      </body>
-    </html>
-  );
+  <script>window.__MENUS__ = ${menusJson};</script>
+  <script src="/order-web-app.js"></script>
+  <script>
+    document.getElementById('overlay').addEventListener('click', closeSheet);
+    document.getElementById('cart-overlay').addEventListener('click', closeCartSheet);
+    document.getElementById('cart-bar').addEventListener('click', openCartSheet);
+    document.getElementById('search-input').addEventListener('input', function() { searchMenus(this.value); });
+  </script>
+</body>
+</html>`;
 }
 
 const CSS = `
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f7f7;padding-bottom:80px}
-
-/* ── Header ── */
 .header{background:#fff;position:sticky;top:0;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .header-top{padding:14px 16px 8px;display:flex;align-items:center;gap:10px}
 .shop-name{font-size:18px;font-weight:700;flex:1}
@@ -107,8 +95,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .cat-tabs::-webkit-scrollbar{display:none}
 .cat-tab{flex-shrink:0;padding:6px 16px;border-radius:50px;border:1.5px solid #e0e0e0;background:#fff;font-size:13px;font-weight:500;cursor:pointer;color:#555;transition:all .15s}
 .cat-tab.active{background:#FF6B00;border-color:#FF6B00;color:#fff;font-weight:700}
-
-/* ── Menu grid ── */
 .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px}
 .menu-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;transition:transform .1s}
 .menu-card:active{transform:scale(.97)}
@@ -121,23 +107,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .menu-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
 .menu-price{font-size:15px;font-weight:700;color:#FF6B00}
 .add-btn{width:30px;height:30px;border-radius:50%;background:#FF6B00;color:#fff;font-size:20px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;line-height:1}
-
-/* ── Cart bar ── */
 .cart-bar{position:fixed;bottom:16px;left:16px;right:16px;background:#1A1A1A;border-radius:16px;padding:14px 18px;display:flex;align-items:center;z-index:30;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.25)}
 .cart-bar-left{display:flex;align-items:center;gap:6px}
 .cart-bar-count{background:#FF6B00;color:#fff;border-radius:50%;width:24px;height:24px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .cart-bar-label{color:#fff;font-size:14px}
 .cart-bar-center{flex:1;text-align:center;color:#fff;font-size:16px;font-weight:700}
 .cart-bar-right{color:#FF6B00;font-size:13px;font-weight:600}
-
-/* ── Overlay & sheet ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
 .overlay.show{opacity:1;pointer-events:all}
 .sheet{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:51;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:92vh;overflow-y:auto}
 .sheet.show{transform:translateY(0)}
 .sheet-handle{width:36px;height:4px;background:#e0e0e0;border-radius:2px;margin:12px auto 0}
-
-/* ── Menu detail sheet ── */
 .sheet-hero{width:100%;aspect-ratio:4/3;object-fit:cover}
 .sheet-hero-placeholder{width:100%;aspect-ratio:4/3;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:60px}
 .sheet-body{padding:16px}
@@ -169,8 +149,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .qty-num{font-size:18px;font-weight:700;min-width:28px;text-align:center}
 .add-cart-btn{width:100%;padding:16px;background:#FF6B00;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;margin-bottom:8px;transition:opacity .15s}
 .add-cart-btn:disabled{opacity:.4}
-
-/* ── Cart sheet ── */
 .cart-header{padding:16px;border-bottom:1px solid #f0f0f0;font-size:18px;font-weight:700}
 .cart-item-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #f5f5f5}
 .cart-item-img{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#f0f0f0;flex-shrink:0}
@@ -187,8 +165,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .cart-total-row{display:flex;justify-content:space-between;margin-bottom:14px;font-size:16px;font-weight:700}
 .cart-total-price{color:#FF6B00;font-size:20px}
 .cart-checkout-btn{width:100%;padding:16px;background:#FF6B00;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer}
-
-/* ── Toast ── */
 .toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1}
 `;
