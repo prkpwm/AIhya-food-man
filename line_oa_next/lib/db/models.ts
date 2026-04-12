@@ -72,6 +72,7 @@ const StoreSettingsSchema = new Schema({
   accountName: { type: String, default: '' },
   promptPayNumber: { type: String, default: '' },
   qrCodeImageUrl: { type: String, default: null },
+  qrCodeImageBase64: { type: String, default: null },
 });
 
 export const StoreSettingsModel = models.StoreSettings ?? model('StoreSettings', StoreSettingsSchema);

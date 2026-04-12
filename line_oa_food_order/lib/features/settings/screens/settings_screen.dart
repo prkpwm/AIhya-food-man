@@ -59,7 +59,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _acceptBankTransfer = data['acceptBankTransfer'] as bool? ?? false;
         _acceptPromptPay = data['acceptPromptPay'] as bool? ?? false;
         _acceptQrCode = data['acceptQrCode'] as bool? ?? false;
-        _existingQrUrl = data['qrCodeImageUrl'] as String?;
+        // use QR endpoint if base64 stored, else fallback to url
+        final hasBase64 = (data['qrCodeImageBase64'] as String?) != null;
+        _existingQrUrl = hasBase64
+            ? 'https://aihya-food-man.onrender.com/api/settings/qr?merchantId=merchant-001&t=${DateTime.now().millisecondsSinceEpoch}'
+            : (data['qrCodeImageUrl'] as String?);
         _loading = false;
       });
     } catch (_) {

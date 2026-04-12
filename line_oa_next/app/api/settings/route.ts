@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStoreSettings, upsertStoreSettings } from '@/lib/services/store_settings.service';
-import { env } from '@/lib/config/env';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,20 +17,16 @@ export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get('content-type') ?? '';
     let body: Record<string, unknown> = {};
-    let qrCodeImageUrl: string | null = null;
+    let qrBase64: string | null = null;
 
     if (contentType.includes('multipart/form-data')) {
       const form = await req.formData();
       body = Object.fromEntries(form.entries()) as Record<string, unknown>;
       const file = form.get('qrImage') as File | null;
-      if (file) {
+      if (file && file.size > 0) {
         const buf = Buffer.from(await file.arrayBuffer());
-        const ext = path.extname(file.name) || '.jpg';
-        const filename = `qr-${Date.now()}${ext}`;
-        const dir = path.join(process.cwd(), 'public', 'images', 'qr');
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, filename), buf);
-        qrCodeImageUrl = `${env.renderExternalUrl || 'http://localhost:3000'}/images/qr/${filename}`;
+        const mime = file.type || 'image/jpeg';
+        qrBase64 = `data:${mime};base64,${buf.toString('base64')}`;
       }
     } else {
       body = await req.json();
@@ -42,16 +35,16 @@ export async function POST(req: NextRequest) {
     const merchantId = (body.merchantId as string) ?? 'merchant-001';
     const data = await upsertStoreSettings({
       merchantId,
-      shopName: body.shopName as string,
+      shopName: (body.shopName as string) ?? '',
       acceptCash: body.acceptCash === true || body.acceptCash === 'true',
       acceptBankTransfer: body.acceptBankTransfer === true || body.acceptBankTransfer === 'true',
       acceptPromptPay: body.acceptPromptPay === true || body.acceptPromptPay === 'true',
       acceptQrCode: body.acceptQrCode === true || body.acceptQrCode === 'true',
-      bankName: body.bankName as string,
-      bankAccount: body.bankAccount as string,
-      accountName: body.accountName as string,
-      promptPayNumber: body.promptPayNumber as string,
-      ...(qrCodeImageUrl !== null ? { qrCodeImageUrl } : {}),
+      bankName: (body.bankName as string) ?? '',
+      bankAccount: (body.bankAccount as string) ?? '',
+      accountName: (body.accountName as string) ?? '',
+      promptPayNumber: (body.promptPayNumber as string) ?? '',
+      ...(qrBase64 !== null ? { qrCodeImageBase64: qrBase64, qrCodeImageUrl: null } : {}),
     });
     return NextResponse.json({ success: true, data });
   } catch (err) {

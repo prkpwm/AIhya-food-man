@@ -13,6 +13,7 @@ export interface StoreSettings {
   accountName: string;
   promptPayNumber: string;
   qrCodeImageUrl: string | null;
+  qrCodeImageBase64: string | null;
 }
 
 function docToSettings(doc: Record<string, unknown>): StoreSettings {
@@ -28,6 +29,7 @@ function docToSettings(doc: Record<string, unknown>): StoreSettings {
     accountName: (doc.accountName as string) ?? '',
     promptPayNumber: (doc.promptPayNumber as string) ?? '',
     qrCodeImageUrl: (doc.qrCodeImageUrl as string | null) ?? null,
+    qrCodeImageBase64: (doc.qrCodeImageBase64 as string | null) ?? null,
   };
 }
 
@@ -35,7 +37,7 @@ export async function getStoreSettings(merchantId: string): Promise<StoreSetting
   await connectDB();
   const doc = await StoreSettingsModel.findById(merchantId).lean();
   if (!doc) {
-    return { merchantId, shopName: '', acceptCash: true, acceptBankTransfer: false, acceptPromptPay: false, acceptQrCode: false, bankName: '', bankAccount: '', accountName: '', promptPayNumber: '', qrCodeImageUrl: null };
+    return { merchantId, shopName: '', acceptCash: true, acceptBankTransfer: false, acceptPromptPay: false, acceptQrCode: false, bankName: '', bankAccount: '', accountName: '', promptPayNumber: '', qrCodeImageUrl: null, qrCodeImageBase64: null };
   }
   return docToSettings(doc as Record<string, unknown>);
 }
