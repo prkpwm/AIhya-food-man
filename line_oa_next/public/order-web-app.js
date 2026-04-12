@@ -465,6 +465,12 @@ async function loadPaymentInfo(orderId) {
       var vatAmt = Math.round(subtotal * vatRate);
       var total = subtotal + vatAmt;
 
+      html += '<div class="pay-amount-hero">'
+        + '<div class="pay-amount-label">ยอดที่ต้องชำระ</div>'
+        + '<div class="pay-amount-value">฿' + total.toFixed(0) + '</div>'
+        + (orderId ? '<div class="pay-amount-order">คำสั่ง #' + orderId.slice(-6) + '</div>' : '')
+        + '</div>';
+
       html += '<div class="receipt">';
       html += '<div class="receipt-title">' + (s.shopName || 'ร้านอาหาร') + '</div>';
       html += '<div class="receipt-divider"></div>';
@@ -534,6 +540,10 @@ async function loadPaymentInfo(orderId) {
     }
 
     document.getElementById('payment-content').innerHTML = html;
+    // auto-select first payment method
+    if (methods.length > 0) {
+      selectPayMethod(methods[0].id);
+    }
   } catch(e) {
     document.getElementById('payment-content').innerHTML = '<div class="empty-state">เกิดข้อผิดพลาด</div>';
   }
@@ -543,7 +553,7 @@ function _slipUploadHtml(orderId) {
   if (!orderId) return '';
   return '<div class="slip-section">'
     + '<div class="pay-section-title">แนบสลิปการโอน</div>'
-    + '<label class="slip-label" for="slip-input">📎 เลือกรูปสลิป</label>'
+    + '<label class="slip-label" for="slip-input"><span>📎</span><span>เลือกรูปสลิป</span></label>'
     + '<input type="file" id="slip-input" accept="image/*" style="display:none" onchange="uploadSlip(\'' + orderId + '\',this)"/>'
     + '<div id="slip-preview"></div>'
     + '<div id="slip-status"></div>'
@@ -596,14 +606,14 @@ async function cashDone() {
 
 var PAGE_CSS = `
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f7f7;min-height:100vh}
-.page-header{background:#fff;padding:16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);position:sticky;top:0;z-index:10}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f3f4;min-height:100vh}
+.page-header{background:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.1);position:sticky;top:0;z-index:10}
 .page-icon{font-size:22px}
-.page-title{font-size:18px;font-weight:700}
-.page-body{padding:16px}
+.page-title{font-size:18px;font-weight:600;color:#202124}
+.page-body{padding:16px;max-width:480px;margin:0 auto}
 .empty-state{text-align:center;padding:60px 20px;color:#999;font-size:15px;line-height:1.8}
 .loading{text-align:center;padding:40px;color:#999}
-.order-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.order-card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .order-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .order-id{font-size:14px;font-weight:700;color:#333}
 .order-status{color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:50px}
@@ -611,45 +621,62 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .order-total{font-size:15px;font-weight:700;color:#FF6B00}
 .order-wait{font-size:12px;color:#FF9800;margin-top:4px}
 .fav-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.fav-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.fav-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .fav-img-wrap{width:100%;aspect-ratio:4/3}
 .fav-img-wrap img,.no-img{width:100%;height:100%;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:36px;background:#f0f0f0}
 .fav-body{padding:10px}
 .fav-name{font-size:14px;font-weight:600}
 .fav-price{font-size:14px;font-weight:700;color:#FF6B00;margin-top:4px}
-.contact-card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.contact-card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .contact-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f5f5f5;font-size:15px}
 .contact-row:last-child{border-bottom:none}
 .contact-icon{font-size:20px;width:28px;text-align:center}
-.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap;pointer-events:none}
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#202124;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 .toast.show{opacity:1}
-.pay-qr{text-align:center;margin-bottom:16px}.pay-qr img{width:100%;max-width:260px;border-radius:12px;border:1px solid #eee}
-.pay-section-title{font-size:13px;font-weight:700;color:#555;margin-bottom:8px}
-.pay-methods{display:flex;gap:8px;margin-bottom:16px}
-.pay-method{flex:1;background:#fff;border-radius:12px;padding:12px 4px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:4px;font-size:11px;color:#555}
-.pay-method span:first-child{font-size:24px}
-.pay-info-card{background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px}
-.pay-info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:14px}
-.pay-info-row:last-child{border-bottom:none}
-.pay-info-label{color:#888}
-.pay-info-value{font-weight:700}
-.receipt{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px}
-.receipt-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:10px}
-.receipt-divider{border:none;border-top:1px dashed #ddd;margin:10px 0}
-.receipt-row{display:flex;justify-content:space-between;font-size:14px;padding:4px 0;color:#555}
-.receipt-total{font-size:16px;font-weight:700;color:#FF6B00;padding-top:8px}
-.pay-method{flex:1;background:#fff;border-radius:12px;padding:12px 4px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:4px;font-size:11px;color:#555;cursor:pointer;transition:all .15s;border:2px solid transparent}
-.pay-method.active{border-color:#FF6B00;background:#FFF3E0}
-.pay-zone{margin-top:12px}
+
+/* ── Payment page ── */
+.pay-amount-hero{background:linear-gradient(135deg,#1a73e8,#0d47a1);border-radius:20px;padding:28px 20px;text-align:center;margin-bottom:20px;color:#fff}
+.pay-amount-label{font-size:13px;opacity:.85;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+.pay-amount-value{font-size:40px;font-weight:700;letter-spacing:-1px}
+.pay-amount-order{font-size:12px;opacity:.7;margin-top:6px}
+
+.receipt{background:#fff;border-radius:16px;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;overflow:hidden}
+.receipt-title{font-size:15px;font-weight:600;color:#202124;padding:14px 16px 0}
+.receipt-divider{border:none;border-top:1px solid #f1f3f4;margin:10px 0}
+.receipt-row{display:flex;justify-content:space-between;font-size:14px;padding:6px 16px;color:#5f6368}
+.receipt-total{font-size:16px;font-weight:700;color:#202124;padding:12px 16px;background:#f8f9fa;border-top:1px solid #e8eaed}
+
+.pay-section-title{font-size:12px;font-weight:600;color:#5f6368;letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px;padding-left:2px}
+
+.pay-methods{display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:2px}
+.pay-methods::-webkit-scrollbar{display:none}
+.pay-method{flex:0 0 auto;background:#fff;border-radius:50px;padding:10px 18px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:#5f6368;cursor:pointer;transition:all .2s;border:1.5px solid #e8eaed;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.pay-method span:first-child{font-size:18px}
+.pay-method.active{border-color:#1a73e8;background:#e8f0fe;color:#1a73e8;box-shadow:0 2px 8px rgba(26,115,232,.2)}
+
+.pay-zone{animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.pay-qr{text-align:center;margin-bottom:16px}
+.pay-qr img{width:100%;max-width:240px;border-radius:16px;border:1px solid #e8eaed;box-shadow:0 4px 16px rgba(0,0,0,.1)}
 .pay-qr-loading{text-align:center;padding:40px;color:#999;font-size:14px}
-.pay-cash-msg{background:#fff;border-radius:14px;padding:24px;text-align:center;font-size:16px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.06);line-height:2}
-.pay-done-btn{width:100%;margin-top:12px;padding:16px;background:#4CAF50;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer}
+
+.pay-info-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px}
+.pay-info-row{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid #f1f3f4}
+.pay-info-row:last-child{border-bottom:none}
+.pay-info-label{font-size:13px;color:#5f6368}
+.pay-info-value{font-size:14px;font-weight:600;color:#202124}
+
+.pay-cash-msg{background:#fff;border-radius:16px;padding:28px 20px;text-align:center;font-size:15px;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.08);line-height:2;color:#202124}
+.pay-done-btn{width:100%;margin-top:14px;padding:16px;background:#34a853;color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(52,168,83,.35);transition:opacity .2s}
 .pay-done-btn:disabled{opacity:.5}
-.slip-section{margin-top:12px}
-.slip-label{display:block;width:100%;padding:14px;background:#FF6B00;color:#fff;border-radius:14px;text-align:center;font-size:15px;font-weight:700;cursor:pointer}
-.slip-uploading{text-align:center;padding:10px;color:#999}
-.slip-success{text-align:center;padding:10px;color:#4CAF50;font-weight:700}
-.slip-error{text-align:center;padding:10px;color:#F44336}
+
+.slip-section{margin-top:4px}
+.slip-label{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;background:#1a73e8;color:#fff;border-radius:50px;text-align:center;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(26,115,232,.35);transition:opacity .2s}
+.slip-label:active{opacity:.85}
+.slip-uploading{text-align:center;padding:10px;color:#999;font-size:13px}
+.slip-success{text-align:center;padding:10px;color:#34a853;font-weight:600;font-size:14px}
+.slip-error{text-align:center;padding:10px;color:#ea4335;font-size:13px}
 `;
 
 async function initLiff() {
