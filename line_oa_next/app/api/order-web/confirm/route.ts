@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensureInit } from '@/lib/init';
 import * as orderService from '@/lib/services/order.service';
 import * as lineService from '@/lib/services/line.service';
+import { emitNewOrder } from '@/lib/services/order_events';
 import { env } from '@/lib/config/env';
 import { OrderItem } from '@/lib/types';
 
@@ -71,6 +72,9 @@ export async function POST(req: NextRequest) {
     const order = orderService.createOrder(merchantId ?? 'merchant-001', userId, 'ลูกค้า LINE', items);
     const paymentUrl = `${env.renderExternalUrl}/payment?orderId=${order.id}`;
     const flex = buildConfirmFlex(order, paymentUrl);
+
+    // notify SSE listeners (merchant app)
+    emitNewOrder(order.id, order.customerName, order.totalPrice);
 
     // push flex to user — fire and forget (don't fail the order if LINE push fails)
     if (env.line.channelAccessToken) {
