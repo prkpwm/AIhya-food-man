@@ -431,7 +431,8 @@ class _OrderCard extends ConsumerWidget {
         'footer': {
           'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
           'contents': [
-            {'type': 'button', 'style': 'secondary', 'action': {'type': 'message', 'label': '📦 ดูสถานะ', 'text': 'สถานะ #$shortId'}},
+            {'type': 'button', 'style': 'primary', 'color': '#FF6B00', 'action': {'type': 'uri', 'label': '📦 ดูสถานะ', 'uri': 'https://liff.line.me/2009771520-R2Vrj84v?page=status'}},
+            {'type': 'button', 'style': 'secondary', 'action': {'type': 'uri', 'label': '🍽️ สั่งเพิ่ม', 'uri': 'https://liff.line.me/2009771520-R2Vrj84v?page=order'}},
           ],
         },
       },
@@ -670,7 +671,8 @@ class _RejectSheetState extends State<_RejectSheet> {
         'footer': {
           'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
           'contents': [
-            {'type': 'button', 'style': 'secondary', 'action': {'type': 'message', 'label': '📦 ดูสถานะ', 'text': 'สถานะ #$shortId'}},
+            {'type': 'button', 'style': 'primary', 'color': '#FF6B00', 'action': {'type': 'uri', 'label': '📦 ดูสถานะ', 'uri': 'https://liff.line.me/2009771520-R2Vrj84v?page=status'}},
+            {'type': 'button', 'style': 'secondary', 'action': {'type': 'uri', 'label': '🍽️ สั่งเพิ่ม', 'uri': 'https://liff.line.me/2009771520-R2Vrj84v?page=order'}},
           ],
         },
       },

@@ -51,8 +51,8 @@ function buildConfirmFlex(order: Order, paymentUrl: string) {
       footer: {
         type: 'box', layout: 'vertical', spacing: 'sm',
         contents: [
-          { type: 'button', style: 'primary', color: '#FF6B00', action: { type: 'uri', label: '💳 ชำระเงิน', uri: paymentUrl } },
-          { type: 'button', style: 'secondary', action: { type: 'message', label: '📦 ติดตามสถานะ', text: `สถานะ #${order.id.slice(-6)}` } },
+          { type: 'button', style: 'primary', color: '#FF6B00', action: { type: 'uri', label: '📦 ติดตามสถานะ', uri: `${env.liffUrl}?page=status` } },
+          { type: 'button', style: 'secondary', action: { type: 'uri', label: '🍽️ สั่งเพิ่ม', uri: `${env.liffUrl}?page=order` } },
         ],
       },
     },
