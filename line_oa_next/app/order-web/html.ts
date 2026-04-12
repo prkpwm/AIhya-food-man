@@ -85,10 +85,14 @@ export function buildOrderWebHtml(menus: Menu[]): string {
   <script>window.__MENUS__ = ${menusJson};</script>
   <script src="/order-web-app.js"></script>
   <script>
-    document.getElementById('overlay').addEventListener('click', closeSheet);
-    document.getElementById('cart-overlay').addEventListener('click', closeCartSheet);
-    document.getElementById('cart-bar').addEventListener('click', openCartSheet);
-    document.getElementById('search-input').addEventListener('input', function() { searchMenus(this.value); });
+    var _o = document.getElementById('overlay');
+    var _co = document.getElementById('cart-overlay');
+    var _cb = document.getElementById('cart-bar');
+    var _si = document.getElementById('search-input');
+    if (_o) _o.addEventListener('click', closeSheet);
+    if (_co) _co.addEventListener('click', closeCartSheet);
+    if (_cb) _cb.addEventListener('click', openCartSheet);
+    if (_si) _si.addEventListener('input', function() { searchMenus(this.value); });
   </script>
 </body>
 </html>`;
