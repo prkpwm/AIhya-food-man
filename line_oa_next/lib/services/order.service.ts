@@ -14,6 +14,9 @@ export function getOrder(id: string): Order | null { return orders.get(id) ?? nu
 export function getOrdersByMerchant(merchantId: string): Order[] {
   return [...orders.values()].filter((o) => o.merchantId === merchantId);
 }
+export function getOrdersByCustomer(customerId: string): Order[] {
+  return [...orders.values()].filter((o) => o.customerId === customerId);
+}
 export function updateOrderStatus(id: string, status: OrderStatus): Order | null {
   const order = orders.get(id);
   if (!order) return null;

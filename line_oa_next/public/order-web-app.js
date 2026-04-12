@@ -12,16 +12,6 @@ var hideSoldOut = false;
 
 // ─── LIFF init ────────────────────────────────────────────────────────────────
 
-async function initLiff() {
-  try {
-    await liff.init({ liffId: '2009771520-R2Vrj84v' });
-    if (liff.isLoggedIn()) {
-      var p = await liff.getProfile();
-      userId = p.userId;
-    } else { liff.login(); }
-  } catch(e) {}
-}
-
 // ─── Category filter ──────────────────────────────────────────────────────────
 
 function filterCat(btn) {
@@ -325,6 +315,162 @@ function toggleSoldOut() {
     else btn.classList.remove('hiding');
   }
   applyFilter(document.getElementById('search-input').value);
+}
+
+// ─── Page routing ─────────────────────────────────────────────────────────────
+
+var PAGES = {
+  order: renderPageOrder,
+  status: renderPageStatus,
+  promotion: renderPagePromotion,
+  favorites: renderPageFavorites,
+  cart: renderPageCart,
+  contact: renderPageContact,
+};
+
+function getCurrentPage() {
+  var params = new URLSearchParams(window.location.search);
+  var page = params.get('page') || 'order';
+  return PAGES[page] ? page : 'order';
+}
+
+function renderPageOrder() {
+  // default page — already rendered in HTML, nothing to do
+}
+
+function renderPageStatus() {
+  document.body.innerHTML = buildSimplePage('📦', 'ติดตามสถานะ', renderStatusContent());
+  loadOrderStatus();
+}
+
+function renderPagePromotion() {
+  document.body.innerHTML = buildSimplePage('🎁', 'โปรโมชั่น', '<div class="empty-state">ยังไม่มีโปรโมชั่นในขณะนี้</div>');
+}
+
+function renderPageFavorites() {
+  document.body.innerHTML = buildSimplePage('❤️', 'เมนูโปรด', renderFavoritesContent());
+}
+
+function renderPageCart() {
+  document.body.innerHTML = buildSimplePage('🛒', 'ตะกร้าสินค้า', '<div class="empty-state">ตะกร้าว่างเปล่า<br/><small>กลับไปสั่งอาหารก่อนนะ</small></div>');
+}
+
+function renderPageContact() {
+  document.body.innerHTML = buildSimplePage('📞', 'ติดต่อร้าน', renderContactContent());
+}
+
+function buildSimplePage(icon, title, bodyHtml) {
+  return '<style>' + PAGE_CSS + '</style>'
+    + '<div class="page-header"><span class="page-icon">' + icon + '</span><span class="page-title">' + title + '</span></div>'
+    + '<div class="page-body">' + bodyHtml + '</div>'
+    + '<div class="toast" id="toast"></div>';
+}
+
+function renderStatusContent() {
+  return '<div id="status-content"><div class="loading">กำลังโหลด...</div></div>';
+}
+
+function renderFavoritesContent() {
+  var favIds = JSON.parse(localStorage.getItem('fav_menus') || '[]');
+  if (favIds.length === 0) return '<div class="empty-state">ยังไม่มีเมนูโปรด<br/><small>กดหัวใจที่เมนูเพื่อบันทึก</small></div>';
+  var favMenus = MENUS.filter(function(m) { return favIds.includes(m.id); });
+  if (favMenus.length === 0) return '<div class="empty-state">ยังไม่มีเมนูโปรด</div>';
+  return '<div class="fav-grid">' + favMenus.map(function(m) {
+    var img = m.imageUrl ? '<img src="' + m.imageUrl + '" alt="' + m.name + '"/>' : '<div class="no-img">🍽️</div>';
+    return '<div class="fav-card">'
+      + '<div class="fav-img-wrap">' + img + '</div>'
+      + '<div class="fav-body"><div class="fav-name">' + m.name + '</div>'
+      + '<div class="fav-price">฿' + m.price.toFixed(0) + '</div></div>'
+      + '</div>';
+  }).join('') + '</div>';
+}
+
+function renderContactContent() {
+  return '<div class="contact-card">'
+    + '<div class="contact-row"><span class="contact-icon">🏪</span><span>Alhya Food</span></div>'
+    + '<div class="contact-row"><span class="contact-icon">🕐</span><span>เปิด 10:00 – 21:00 น.</span></div>'
+    + '<div class="contact-row"><span class="contact-icon">📍</span><span>กรุณาติดต่อผ่าน LINE</span></div>'
+    + '</div>';
+}
+
+async function loadOrderStatus() {
+  if (!userId) {
+    document.getElementById('status-content').innerHTML = '<div class="empty-state">กรุณาเข้าสู่ระบบ</div>';
+    return;
+  }
+  try {
+    var res = await fetch('/api/order-web/status?userId=' + encodeURIComponent(userId));
+    var data = await res.json();
+    if (!data.success || !data.orders || data.orders.length === 0) {
+      document.getElementById('status-content').innerHTML = '<div class="empty-state">ไม่มีออเดอร์ที่กำลังดำเนินการ</div>';
+      return;
+    }
+    var statusLabel = { confirmed: 'ยืนยันแล้ว', preparing: 'กำลังทำ', ready: 'พร้อมส่ง', completed: 'เสร็จสิ้น', cancelled: 'ยกเลิก' };
+    var statusColor = { confirmed: '#2196F3', preparing: '#FF9800', ready: '#4CAF50', completed: '#9E9E9E', cancelled: '#F44336' };
+    var html = data.orders.map(function(order) {
+      var color = statusColor[order.status] || '#999';
+      var label = statusLabel[order.status] || order.status;
+      var items = (order.items || []).map(function(i) { return i.menuName + ' ×' + i.quantity; }).join(', ');
+      return '<div class="order-card">'
+        + '<div class="order-card-top">'
+        + '<span class="order-id">#' + order.id.slice(-6) + '</span>'
+        + '<span class="order-status" style="background:' + color + '">' + label + '</span>'
+        + '</div>'
+        + '<div class="order-items">' + items + '</div>'
+        + '<div class="order-total">฿' + (order.totalAmount || 0).toFixed(0) + '</div>'
+        + (order.estimatedWaitMinutes > 0 ? '<div class="order-wait">รออีก ~' + order.estimatedWaitMinutes + ' นาที</div>' : '')
+        + '</div>';
+    }).join('');
+    document.getElementById('status-content').innerHTML = html;
+  } catch(e) {
+    document.getElementById('status-content').innerHTML = '<div class="empty-state">เกิดข้อผิดพลาด กรุณาลองใหม่</div>';
+  }
+}
+
+var PAGE_CSS = `
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f7f7;min-height:100vh}
+.page-header{background:#fff;padding:16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);position:sticky;top:0;z-index:10}
+.page-icon{font-size:22px}
+.page-title{font-size:18px;font-weight:700}
+.page-body{padding:16px}
+.empty-state{text-align:center;padding:60px 20px;color:#999;font-size:15px;line-height:1.8}
+.loading{text-align:center;padding:40px;color:#999}
+.order-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.order-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.order-id{font-size:14px;font-weight:700;color:#333}
+.order-status{color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:50px}
+.order-items{font-size:13px;color:#666;margin-bottom:6px}
+.order-total{font-size:15px;font-weight:700;color:#FF6B00}
+.order-wait{font-size:12px;color:#FF9800;margin-top:4px}
+.fav-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fav-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.fav-img-wrap{width:100%;aspect-ratio:4/3}
+.fav-img-wrap img,.no-img{width:100%;height:100%;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:36px;background:#f0f0f0}
+.fav-body{padding:10px}
+.fav-name{font-size:14px;font-weight:600}
+.fav-price{font-size:14px;font-weight:700;color:#FF6B00;margin-top:4px}
+.contact-card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.contact-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f5f5f5;font-size:15px}
+.contact-row:last-child{border-bottom:none}
+.contact-icon{font-size:20px;width:28px;text-align:center}
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1}
+`;
+
+async function initLiff() {
+  try {
+    await liff.init({ liffId: '2009771520-R2Vrj84v' });
+    if (liff.isLoggedIn()) {
+      var p = await liff.getProfile();
+      userId = p.userId;
+    } else { liff.login(); }
+  } catch(e) {}
+
+  var page = getCurrentPage();
+  if (page !== 'order') {
+    PAGES[page]();
+  }
 }
 
 initLiff();
