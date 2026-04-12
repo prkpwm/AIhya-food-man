@@ -5,13 +5,24 @@ import { Ingredient } from '@/lib/types';
 
 ensureInit();
 
-export function GET(req: NextRequest) {
-  const merchantId = req.nextUrl.searchParams.get('merchantId') ?? 'merchant-001';
-  return NextResponse.json({ success: true, data: menuService.getIngredientsByMerchant(merchantId) });
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  try {
+    const merchantId = req.nextUrl.searchParams.get('merchantId') ?? 'merchant-001';
+    const data = await menuService.getIngredientsByMerchant(merchantId);
+    return NextResponse.json({ success: true, data });
+  } catch (err) {
+    return NextResponse.json({ code: '500', en: String(err), th: 'ข้อผิดพลาด' }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json() as Omit<Ingredient, 'id'>;
-  const ingredient = menuService.upsertIngredient(body);
-  return NextResponse.json({ success: true, data: ingredient }, { status: 201 });
+  try {
+    const body = await req.json() as Omit<Ingredient, 'id'>;
+    const ingredient = await menuService.upsertIngredient(body);
+    return NextResponse.json({ success: true, data: ingredient }, { status: 201 });
+  } catch (err) {
+    return NextResponse.json({ code: '500', en: String(err), th: 'ข้อผิดพลาด' }, { status: 500 });
+  }
 }

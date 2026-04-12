@@ -1,9 +1,9 @@
 import { seedData } from './data/seed';
 
-let initialized = false;
+let seedPromise: Promise<void> | null = null;
 
 export function ensureInit(): void {
-  if (initialized) return;
-  initialized = true;
-  seedData();
+  if (!seedPromise) {
+    seedPromise = seedData().catch((err) => console.error('[init] seed error:', err));
+  }
 }

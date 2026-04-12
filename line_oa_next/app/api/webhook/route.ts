@@ -6,7 +6,7 @@ import * as menuService from '@/lib/services/menu.service';
 import * as cartService from '@/lib/services/cart.service';
 import { fuzzyFind } from '@/lib/utils/fuzzy';
 import { ensureInit } from '@/lib/init';
-import { Order } from '@/lib/types';
+import { Order, Menu } from '@/lib/types';
 
 ensureInit();
 
@@ -46,7 +46,8 @@ async function handleEvent(event: WebhookEvent) {
 
 async function handleText(replyToken: string, userId: string, text: string) {
   if (text === 'เมนู' || text === 'menu') {
-    const menus = menuService.getMenusByMerchant(MERCHANT_ID).filter((m) => m.isAvailable);
+    const allMenus = await menuService.getMenusByMerchant(MERCHANT_ID);
+    const menus = allMenus.filter((m) => m.isAvailable);
     if (!menus.length) { await replyMsg(replyToken, [{ type: 'text', text: 'ขณะนี้ยังไม่มีเมนูที่พร้อมให้บริการ' }]); return; }
     await replyMsg(replyToken, menus.slice(0, 5).map(buildMenuFlex));
     return;
@@ -68,7 +69,7 @@ async function handleText(replyToken: string, userId: string, text: string) {
 
   if (text.startsWith('สั่ง ')) {
     const menuName = text.slice(4).trim();
-    const menus = menuService.getMenusByMerchant(MERCHANT_ID);
+    const menus = await menuService.getMenusByMerchant(MERCHANT_ID);
     const menu = fuzzyFind(menuName, menus, (m) => m.name, 3);
     if (!menu) { await replyMsg(replyToken, [{ type: 'text', text: `ไม่พบเมนู "${menuName}"\n\nพิมพ์ "เมนู" เพื่อดูทั้งหมด` }]); return; }
     if (!menu.isAvailable) { await replyMsg(replyToken, [{ type: 'text', text: `ขออภัย "${menu.name}" หมดชั่วคราว` }]); return; }
@@ -79,7 +80,8 @@ async function handleText(replyToken: string, userId: string, text: string) {
 
   if (text.startsWith('เพิ่ม ')) {
     const menuName = text.slice(4).trim();
-    const menu = fuzzyFind(menuName, menuService.getMenusByMerchant(MERCHANT_ID), (m) => m.name, 3);
+    const allMenus2 = await menuService.getMenusByMerchant(MERCHANT_ID);
+    const menu = fuzzyFind(menuName, allMenus2, (m) => m.name, 3);
     if (!menu || !menu.isAvailable) { await replyMsg(replyToken, [{ type: 'text', text: `ไม่พบเมนู "${menuName}" หรือหมดชั่วคราว` }]); return; }
     const cart = cartService.addItem(userId, MERCHANT_ID, { menuId: menu.id, menuName: menu.name, quantity: 1, unitPrice: menu.price, spiceLevel: 2, customNote: null });
     await replyMsg(replyToken, [buildCartFlex(cart)]);
@@ -143,7 +145,7 @@ async function handleText(replyToken: string, userId: string, text: string) {
 
 // ─── Flex builders ────────────────────────────────────────────────────────────
 
-function buildMenuFlex(menu: ReturnType<typeof menuService.getMenusByMerchant>[number]): LineMessage {
+function buildMenuFlex(menu: Menu): LineMessage {
   return { type: 'flex', altText: menu.name, contents: { type: 'bubble', ...(menu.imageUrl ? { hero: { type: 'image', url: menu.imageUrl, size: 'full', aspectRatio: '20:13', aspectMode: 'cover' } } : {}), body: { type: 'box', layout: 'vertical', spacing: 'md', contents: [{ type: 'text', text: menu.name, weight: 'bold', size: 'xl' }, { type: 'text', text: `฿${menu.price.toFixed(0)}`, color: '#FF6B00', size: 'lg', weight: 'bold' }, { type: 'text', text: menu.description, size: 'sm', color: '#999999', wrap: true }] }, footer: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [{ type: 'button', style: 'primary', color: '#FF6B00', action: { type: 'message', label: 'สั่งเลย', text: `สั่ง ${menu.name}` } }, { type: 'button', style: 'secondary', action: { type: 'message', label: 'ดูเมนูทั้งหมด', text: 'เมนู' } }] } } } as unknown as LineMessage;
 }
 

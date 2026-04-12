@@ -1,32 +1,101 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Menu, Ingredient } from '../types';
+import { connectDB } from '../db/mongoose';
+import { MenuModel, IngredientModel } from '../db/models';
 
-const menus: Map<string, Menu> = new Map();
-const ingredients: Map<string, Ingredient> = new Map();
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
-export function getMenusByMerchant(merchantId: string): Menu[] {
-  return [...menus.values()].filter((m) => m.merchantId === merchantId);
+function docToMenu(doc: Record<string, unknown>): Menu {
+  return {
+    id: doc._id as string,
+    merchantId: doc.merchantId as string,
+    name: doc.name as string,
+    description: doc.description as string,
+    price: doc.price as number,
+    imageUrl: (doc.imageUrl as string | null) ?? null,
+    category: doc.category as string,
+    shopType: doc.shopType as Menu['shopType'],
+    maxSpiceLevel: doc.maxSpiceLevel as number,
+    ingredientIds: (doc.ingredientIds as string[]) ?? [],
+    isAvailable: doc.isAvailable as boolean,
+    addons: (doc.addons as Menu['addons']) ?? [],
+    portionOptions: (doc.portionOptions as Menu['portionOptions']) ?? [],
+  };
 }
-export function getMenu(id: string): Menu | null { return menus.get(id) ?? null; }
-export function upsertMenu(data: Omit<Menu, 'id'> & { id?: string }): Menu {
-  const menu: Menu = { ...data, id: data.id ?? uuidv4() };
-  menus.set(menu.id, menu);
-  return menu;
-}
-export function deleteMenu(id: string): boolean { return menus.delete(id); }
 
-export function getIngredientsByMerchant(merchantId: string): Ingredient[] {
-  return [...ingredients.values()].filter((i) => i.merchantId === merchantId);
+function docToIngredient(doc: Record<string, unknown>): Ingredient {
+  return {
+    id: doc._id as string,
+    merchantId: doc.merchantId as string,
+    name: doc.name as string,
+    quantity: doc.quantity as number,
+    unit: doc.unit as string,
+    lowStockThreshold: doc.lowStockThreshold as number,
+  };
 }
-export function upsertIngredient(data: Omit<Ingredient, 'id'> & { id?: string }): Ingredient {
-  const ingredient: Ingredient = { ...data, id: data.id ?? uuidv4() };
-  ingredients.set(ingredient.id, ingredient);
-  return ingredient;
+
+// ─── Menu CRUD ────────────────────────────────────────────────────────────────
+
+export async function getMenusByMerchant(merchantId: string): Promise<Menu[]> {
+  await connectDB();
+  const docs = await MenuModel.find({ merchantId }).lean();
+  return docs.map((d) => docToMenu(d as Record<string, unknown>));
 }
-export function updateStock(id: string, quantity: number): Ingredient | null {
-  const ingredient = ingredients.get(id);
-  if (!ingredient) return null;
-  const updated = { ...ingredient, quantity };
-  ingredients.set(id, updated);
-  return updated;
+
+export async function getMenu(id: string): Promise<Menu | null> {
+  await connectDB();
+  const doc = await MenuModel.findById(id).lean();
+  return doc ? docToMenu(doc as Record<string, unknown>) : null;
+}
+
+export async function upsertMenu(data: Omit<Menu, 'id'> & { id?: string }): Promise<Menu> {
+  await connectDB();
+  const id = data.id ?? uuidv4();
+  const doc = await MenuModel.findByIdAndUpdate(
+    id,
+    { ...data, _id: id },
+    { upsert: true, new: true },
+  ).lean();
+  return docToMenu(doc as Record<string, unknown>);
+}
+
+export async function deleteMenu(id: string): Promise<boolean> {
+  await connectDB();
+  const res = await MenuModel.findByIdAndDelete(id);
+  return res !== null;
+}
+
+// ─── Ingredient CRUD ──────────────────────────────────────────────────────────
+
+export async function getIngredientsByMerchant(merchantId: string): Promise<Ingredient[]> {
+  await connectDB();
+  const docs = await IngredientModel.find({ merchantId }).lean();
+  return docs.map((d) => docToIngredient(d as Record<string, unknown>));
+}
+
+export async function upsertIngredient(data: Omit<Ingredient, 'id'> & { id?: string }): Promise<Ingredient> {
+  await connectDB();
+  const id = data.id ?? uuidv4();
+  const doc = await IngredientModel.findByIdAndUpdate(
+    id,
+    { ...data, _id: id },
+    { upsert: true, new: true },
+  ).lean();
+  return docToIngredient(doc as Record<string, unknown>);
+}
+
+export async function updateStock(id: string, quantity: number): Promise<Ingredient | null> {
+  await connectDB();
+  const doc = await IngredientModel.findByIdAndUpdate(id, { quantity }, { new: true }).lean();
+  return doc ? docToIngredient(doc as Record<string, unknown>) : null;
+}
+
+export async function countMenus(merchantId: string): Promise<number> {
+  await connectDB();
+  return MenuModel.countDocuments({ merchantId });
+}
+
+export async function countIngredients(merchantId: string): Promise<number> {
+  await connectDB();
+  return IngredientModel.countDocuments({ merchantId });
 }

@@ -7,8 +7,8 @@ ensureInit();
 
 export const dynamic = 'force-dynamic';
 
-export function GET() {
-  const menus = getMenusByMerchant('merchant-001');
+export async function GET() {
+  const menus = await getMenusByMerchant('merchant-001');
   const html = buildOrderWebHtml(menus);
   return new NextResponse(html, {
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
