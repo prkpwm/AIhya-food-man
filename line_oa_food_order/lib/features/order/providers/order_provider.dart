@@ -17,6 +17,10 @@ class OrderNotifier extends AsyncNotifier<List<OrderModel>> {
     await _api.updateOrderStatus(id, status.name);
     ref.invalidateSelf();
   }
+
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
 }
 
 final activeOrdersProvider = Provider<List<OrderModel>>((ref) {

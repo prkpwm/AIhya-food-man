@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 import 'package:line_oa_food_order/core/models/order_model.dart';
 import 'package:line_oa_food_order/core/services/api_service.dart';
 import 'package:line_oa_food_order/core/services/sse_service.dart';
@@ -14,41 +15,48 @@ class OrderListScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderListScreenState extends ConsumerState<OrderListScreen> {
+  StreamSubscription<NewOrderEvent>? _sseSub;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _startSse());
   }
 
+  @override
+  void dispose() {
+    _sseSub?.cancel();
+    super.dispose();
+  }
+
   void _startSse() {
     final svc = ref.read(sseServiceProvider);
     svc.connect();
-    svc.stream.listen((event) {
-      // refresh order list
-      ref.invalidate(orderListProvider);
-      ref.invalidate(groupedMenuOrdersProvider);
-      // show banner
-      if (mounted) {
-        ScaffoldMessenger.of(context).showMaterialBanner(
-          MaterialBanner(
-            backgroundColor: const Color(0xFF1A1A1A),
-            leading: const Icon(Icons.notifications_active, color: Color(0xFF7ECEC4)),
-            content: Text(
-              '🆕 ออเดอร์ใหม่จาก ${event.customerName}  ฿${event.totalPrice.toStringAsFixed(0)}',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
-                child: const Text('ปิด', style: TextStyle(color: Color(0xFF7ECEC4))),
-              ),
-            ],
+    _sseSub = svc.stream.listen(_onNewOrder);
+  }
+
+  void _onNewOrder(NewOrderEvent event) {
+    ref.read(orderListProvider.notifier).refresh();
+    ref.invalidate(groupedMenuOrdersProvider);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showMaterialBanner(
+      MaterialBanner(
+        backgroundColor: const Color(0xFF1A1A1A),
+        leading: const Icon(Icons.notifications_active, color: Color(0xFF7ECEC4)),
+        content: Text(
+          '🆕 ออเดอร์ใหม่จาก ${event.customerName}  ฿${event.totalPrice.toStringAsFixed(0)}',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
+            child: const Text('ปิด', style: TextStyle(color: Color(0xFF7ECEC4))),
           ),
-        );
-        Future.delayed(const Duration(seconds: 4), () {
-          if (mounted) ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-        });
-      }
+        ],
+      ),
+    );
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
     });
   }
 
