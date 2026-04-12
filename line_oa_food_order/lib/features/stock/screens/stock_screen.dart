@@ -4,11 +4,20 @@ import 'package:line_oa_food_order/core/models/ingredient_model.dart';
 import 'package:line_oa_food_order/core/services/api_service.dart';
 import 'package:line_oa_food_order/features/stock/providers/stock_provider.dart';
 
-class StockScreen extends ConsumerWidget {
+class StockScreen extends ConsumerStatefulWidget {
   const StockScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StockScreen> createState() => _StockScreenState();
+}
+
+class _StockScreenState extends ConsumerState<StockScreen> {
+  String _query = '';
+  // null = all, false = available, true = out/low
+  String _filter = 'all'; // 'all' | 'ok' | 'low' | 'out'
+
+  @override
+  Widget build(BuildContext context) {
     final ingredientsAsync = ref.watch(ingredientListProvider);
     final outOfStock = ref.watch(outOfStockProvider);
     final lowStock = ref.watch(lowStockProvider);
@@ -19,7 +28,19 @@ class StockScreen extends ConsumerWidget {
         child: ingredientsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('$e')),
-          data: (ingredients) => CustomScrollView(
+          data: (ingredients) {
+            final filtered = ingredients.where((ing) {
+              final matchQuery = _query.isEmpty || ing.name.toLowerCase().contains(_query.toLowerCase());
+              final matchFilter = switch (_filter) {
+                'out' => !ing.isAvailable,
+                'low' => ing.isLowStock,
+                'ok'  => ing.isAvailable && !ing.isLowStock,
+                _     => true,
+              };
+              return matchQuery && matchFilter;
+            }).toList();
+
+            return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
@@ -46,7 +67,7 @@ class StockScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Row(children: [
                         _StatCard(label: 'ทั้งหมด', value: '${ingredients.length}', color: const Color(0xFF1A1A1A)),
                         const SizedBox(width: 10),
@@ -54,7 +75,55 @@ class StockScreen extends ConsumerWidget {
                         const SizedBox(width: 10),
                         _StatCard(label: 'หมดแล้ว', value: '${outOfStock.length}', color: const Color(0xFFF44336)),
                       ]),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
+                      // ── search + filter ──────────────────────────────────
+                      Row(children: [
+                        Expanded(
+                          child: Container(
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+                            ),
+                            child: TextField(
+                              onChanged: (v) => setState(() => _query = v),
+                              decoration: const InputDecoration(
+                                hintText: 'ค้นหาวัตถุดิบ...',
+                                hintStyle: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
+                                prefixIcon: Icon(Icons.search, size: 18, color: Color(0xFF9E9E9E)),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          height: 42,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _filter,
+                              icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF1A1A1A)),
+                              items: const [
+                                DropdownMenuItem(value: 'all', child: Text('ทั้งหมด')),
+                                DropdownMenuItem(value: 'ok',  child: Text('ปกติ')),
+                                DropdownMenuItem(value: 'low', child: Text('ใกล้หมด')),
+                                DropdownMenuItem(value: 'out', child: Text('หมดแล้ว')),
+                              ],
+                              onChanged: (v) => setState(() => _filter = v ?? 'all'),
+                            ),
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 4),
                     ],
                   ),
                 ),
@@ -65,14 +134,15 @@ class StockScreen extends ConsumerWidget {
                   delegate: SliverChildBuilderDelegate(
                     (_, i) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: _IngredientTile(ingredient: ingredients[i]),
+                      child: _IngredientTile(ingredient: filtered[i]),
                     ),
-                    childCount: ingredients.length,
+                    childCount: filtered.length,
                   ),
                 ),
               ),
             ],
-          ),
+          );
+          },
         ),
       ),
     );
