@@ -507,14 +507,6 @@ async function loadPaymentInfo(orderId) {
         + '<div class="pay-qr"><div class="pay-qr-loading" id="qr-loading">กำลังโหลด QR...</div>'
         + '<img id="qr-img" src="/api/settings/qr?merchantId=merchant-001" alt="QR Code" style="display:none" onload="document.getElementById(\'qr-loading\').style.display=\'none\';this.style.display=\'block\'"/>'
         + '</div>'
-        + '<div class="pay-info-card">';
-      var info = [];
-      if (s.bankName) info.push(['ธนาคาร', s.bankName]);
-      if (s.bankAccount) info.push(['เลขบัญชี', s.bankAccount]);
-      if (s.promptPayNumber) info.push(['พร้อมเพย์', s.promptPayNumber]);
-      if (s.accountName) info.push(['ชื่อบัญชี', s.accountName]);
-      info.forEach(function(r) { html += '<div class="pay-info-row"><span class="pay-info-label">' + r[0] + '</span><span class="pay-info-value">' + r[1] + '</span></div>'; });
-      html += '</div>'
         + _slipUploadHtml(orderId)
         + '</div>';
     }
