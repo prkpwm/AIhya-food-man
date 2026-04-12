@@ -22,6 +22,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _acceptBankTransfer = false;
   bool _acceptPromptPay = false;
   bool _acceptQrCode = false;
+  bool _vatEnabled = false;
 
   String? _existingQrUrl;
   Uint8List? _qrImageBytes;
@@ -59,6 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _acceptBankTransfer = data['acceptBankTransfer'] as bool? ?? false;
         _acceptPromptPay = data['acceptPromptPay'] as bool? ?? false;
         _acceptQrCode = data['acceptQrCode'] as bool? ?? false;
+        _vatEnabled = data['vatEnabled'] as bool? ?? false;
         // use QR endpoint if base64 stored, else fallback to url
         final hasBase64 = (data['qrCodeImageBase64'] as String?) != null;
         _existingQrUrl = hasBase64
@@ -89,6 +91,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           'acceptBankTransfer': _acceptBankTransfer.toString(),
           'acceptPromptPay': _acceptPromptPay.toString(),
           'acceptQrCode': _acceptQrCode.toString(),
+          'vatEnabled': _vatEnabled.toString(),
           'bankName': _bankNameCtrl.text.trim(),
           'bankAccount': _bankAccountCtrl.text.trim(),
           'accountName': _accountNameCtrl.text.trim(),
@@ -145,6 +148,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _Toggle(label: '🏦 โอนธนาคาร', value: _acceptBankTransfer, onChanged: (v) => setState(() => _acceptBankTransfer = v)),
                       _Toggle(label: '⚡ พร้อมเพย์', value: _acceptPromptPay, onChanged: (v) => setState(() => _acceptPromptPay = v)),
                       _Toggle(label: '📱 QR Code', value: _acceptQrCode, onChanged: (v) => setState(() => _acceptQrCode = v)),
+                    ]),
+                    const SizedBox(height: 16),
+                    _Section(title: 'ภาษี', children: [
+                      _Toggle(label: '🧾 เพิ่ม VAT 7%', value: _vatEnabled, onChanged: (v) => setState(() => _vatEnabled = v)),
                     ]),
                     if (_acceptQrCode) ...[
                       const SizedBox(height: 16),

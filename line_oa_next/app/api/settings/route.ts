@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       bankAccount: (body.bankAccount as string) ?? '',
       accountName: (body.accountName as string) ?? '',
       promptPayNumber: (body.promptPayNumber as string) ?? '',
+      vatEnabled: body.vatEnabled === true || body.vatEnabled === 'true',
       ...(qrBase64 !== null ? { qrCodeImageBase64: qrBase64, qrCodeImageUrl: null } : {}),
     });
     return NextResponse.json({ success: true, data });

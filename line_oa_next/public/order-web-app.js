@@ -446,14 +446,52 @@ async function loadPaymentInfo(orderId) {
     var settingsData = await settingsRes.json();
     var s = settingsData.data || {};
 
+    // fetch order if orderId provided
+    var order = null;
+    if (orderId) {
+      try {
+        var orderRes = await fetch('/api/orders/' + orderId);
+        var orderData = await orderRes.json();
+        order = orderData.data || null;
+      } catch(e) {}
+    }
+
     var html = '';
 
-    // QR image at top if set
+    // ── Receipt ──────────────────────────────────────────────────────────────
+    if (order) {
+      var subtotal = order.totalPrice || 0;
+      var vatRate = s.vatEnabled ? 0.07 : 0;
+      var vatAmt = Math.round(subtotal * vatRate);
+      var total = subtotal + vatAmt;
+
+      html += '<div class="receipt">';
+      html += '<div class="receipt-title">' + (s.shopName || 'ร้านอาหาร') + '</div>';
+      html += '<div class="receipt-divider"></div>';
+
+      // items
+      (order.items || []).forEach(function(item) {
+        html += '<div class="receipt-row">'
+          + '<span>' + item.menuName + ' ×' + item.quantity + '</span>'
+          + '<span>฿' + (item.unitPrice * item.quantity).toFixed(0) + '</span>'
+          + '</div>';
+      });
+
+      html += '<div class="receipt-divider"></div>';
+      html += '<div class="receipt-row"><span>ราคาก่อน VAT</span><span>฿' + subtotal.toFixed(0) + '</span></div>';
+      if (vatRate > 0) {
+        html += '<div class="receipt-row"><span>VAT 7%</span><span>฿' + vatAmt.toFixed(0) + '</span></div>';
+      }
+      html += '<div class="receipt-row receipt-total"><span>ยอดรวม</span><span>฿' + total.toFixed(0) + '</span></div>';
+      html += '</div>';
+    }
+
+    // ── QR image ─────────────────────────────────────────────────────────────
     if (s.acceptQrCode && s.qrCodeImageBase64) {
       html += '<div class="pay-qr"><img src="/api/settings/qr?merchantId=merchant-001" alt="QR Code"/></div>';
     }
 
-    // payment methods row
+    // ── Payment methods ───────────────────────────────────────────────────────
     var methods = [];
     if (s.acceptQrCode) methods.push('<div class="pay-method"><span>📱</span><span>QR Code</span></div>');
     if (s.acceptCash) methods.push('<div class="pay-method"><span>💵</span><span>เงินสด</span></div>');
@@ -465,7 +503,7 @@ async function loadPaymentInfo(orderId) {
       html += '<div class="pay-methods">' + methods.join('') + '</div>';
     }
 
-    // bank info
+    // ── Bank info ─────────────────────────────────────────────────────────────
     var info = [];
     if (s.bankName) info.push(['ธนาคาร', s.bankName]);
     if (s.bankAccount) info.push(['เลขบัญชี', s.bankAccount]);
@@ -529,6 +567,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .pay-info-row:last-child{border-bottom:none}
 .pay-info-label{color:#888}
 .pay-info-value{font-weight:700}
+.receipt{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px}
+.receipt-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:10px}
+.receipt-divider{border:none;border-top:1px dashed #ddd;margin:10px 0}
+.receipt-row{display:flex;justify-content:space-between;font-size:14px;padding:4px 0;color:#555}
+.receipt-total{font-size:16px;font-weight:700;color:#FF6B00;padding-top:8px}
 `;
 
 async function initLiff() {

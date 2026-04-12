@@ -73,6 +73,7 @@ const StoreSettingsSchema = new Schema({
   promptPayNumber: { type: String, default: '' },
   qrCodeImageUrl: { type: String, default: null },
   qrCodeImageBase64: { type: String, default: null },
+  vatEnabled: { type: Boolean, default: false },
 });
 
 export const StoreSettingsModel = models.StoreSettings ?? model('StoreSettings', StoreSettingsSchema);
