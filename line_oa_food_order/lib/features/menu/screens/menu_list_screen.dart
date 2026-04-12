@@ -205,13 +205,13 @@ class _MenuListScreenState extends ConsumerState<MenuListScreen> {
 
 // ─── Menu Card ────────────────────────────────────────────────────────────────
 
-class _MenuCard extends StatelessWidget {
+class _MenuCard extends ConsumerWidget {
   final MenuModel menu;
   final VoidCallback onAdd;
   const _MenuCard({required this.menu, required this.onAdd});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: onAdd,
       child: Container(
@@ -243,6 +243,36 @@ class _MenuCard extends StatelessWidget {
                         color: Colors.black54,
                         child: const Center(child: Text('หมด', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
                       ),
+                    // sold-out toggle button (top-left)
+                    Positioned(
+                      top: 6, left: 6,
+                      child: GestureDetector(
+                        onTap: () => _toggleSoldOut(context, ref),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: menu.isAvailable ? Colors.white.withOpacity(0.92) : const Color(0xFFF44336),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(
+                              menu.isAvailable ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              size: 11,
+                              color: menu.isAvailable ? const Color(0xFF555555) : Colors.white,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              menu.isAvailable ? 'ขาย' : 'หมด',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: menu.isAvailable ? const Color(0xFF555555) : Colors.white,
+                              ),
+                            ),
+                          ]),
+                        ),
+                      ),
+                    ),
                     Positioned(
                       top: 8, right: 8,
                       child: Container(
@@ -294,6 +324,26 @@ class _MenuCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _toggleSoldOut(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(menuListProvider.notifier).toggleAvailable(menu.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(menu.isAvailable ? '${menu.name} ตั้งเป็นหมดแล้ว' : '${menu.name} เปิดขายแล้ว'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
   }
 }
 

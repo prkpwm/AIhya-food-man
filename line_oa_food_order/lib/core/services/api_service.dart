@@ -79,6 +79,10 @@ class ApiService {
     return res.data as Map<String, dynamic>;
   }
 
+  Future<void> toggleMenuAvailable(String id, bool isAvailable) async {
+    await _dio.patch('/menus/$id/available', data: {'isAvailable': isAvailable});
+  }
+
   // ─── Menus ──────────────────────────────────────────────────────────────────
 
   Future<List<dynamic>> getMenus({String merchantId = 'merchant-001'}) async {
