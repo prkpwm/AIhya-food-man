@@ -16,6 +16,8 @@ class OrderListScreen extends ConsumerStatefulWidget {
 
 class _OrderListScreenState extends ConsumerState<OrderListScreen> {
   StreamSubscription<NewOrderEvent>? _sseSub;
+  String _query = '';
+  OrderStatus? _filterStatus;
 
   @override
   void initState() {
@@ -75,7 +77,17 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
         child: ordersAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('$e')),
-          data: (orders) => CustomScrollView(            slivers: [
+          data: (orders) {
+            final filtered = orders.where((o) {
+              final matchStatus = _filterStatus == null || o.status == _filterStatus;
+              final q = _query.toLowerCase();
+              final matchQuery = q.isEmpty ||
+                  o.customerName.toLowerCase().contains(q) ||
+                  o.items.any((i) => i.menuName.toLowerCase().contains(q));
+              return matchStatus && matchQuery;
+            }).toList();
+
+            return CustomScrollView(            slivers: [
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -83,7 +95,57 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('ออเดอร์', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
+                      // ── search + filter row ──────────────────────────────
+                      Row(children: [
+                        Expanded(
+                          child: Container(
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+                            ),
+                            child: TextField(
+                              onChanged: (v) => setState(() => _query = v),
+                              decoration: const InputDecoration(
+                                hintText: 'ค้นหาชื่อ / เมนู...',
+                                hintStyle: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
+                                prefixIcon: Icon(Icons.search, size: 18, color: Color(0xFF9E9E9E)),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          height: 42,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<OrderStatus?>(
+                              value: _filterStatus,
+                              hint: const Text('ทั้งหมด', style: TextStyle(fontSize: 13)),
+                              icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF1A1A1A)),
+                              items: [
+                                const DropdownMenuItem(value: null, child: Text('ทั้งหมด')),
+                                ...OrderStatus.values.map((s) => DropdownMenuItem(
+                                      value: s,
+                                      child: Text(s.displayName),
+                                    )),
+                              ],
+                              onChanged: (v) => setState(() => _filterStatus = v),
+                            ),
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 12),
                       if (grouped.isNotEmpty) ...[
                         Container(
                           width: double.infinity,
@@ -116,13 +178,14 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (_, i) => Padding(padding: const EdgeInsets.only(bottom: 12), child: _OrderCard(order: orders[i])),
-                    childCount: orders.length,
+                    (_, i) => Padding(padding: const EdgeInsets.only(bottom: 12), child: _OrderCard(order: filtered[i])),
+                    childCount: filtered.length,
                   ),
                 ),
               ),
             ],
-          ),
+          );
+          },
         ),
       ),
     );
