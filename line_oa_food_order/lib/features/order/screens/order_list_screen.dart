@@ -405,113 +405,50 @@ class _OrderCard extends ConsumerWidget {
   }
 
   void _pushPaymentFlex(OrderModel order) {
-    ApiService().getStoreSettings().then((settings) {
-      final shortId = order.id.split('-').last;
-      final total = order.totalPrice.toStringAsFixed(0);
+    final shortId = order.id.split('-').last;
+    final total = order.totalPrice.toStringAsFixed(0);
+    final itemRows = order.items.map((i) => {
+      'type': 'box', 'layout': 'baseline', 'contents': [
+        {'type': 'text', 'text': '${i.menuName} ×${i.quantity}', 'size': 'sm', 'color': '#555555', 'flex': 4},
+        {'type': 'text', 'text': '฿${i.totalPrice.toStringAsFixed(0)}', 'align': 'end', 'size': 'sm', 'flex': 2},
+      ],
+    }).toList();
 
-      final paymentMethods = <Map<String, dynamic>>[];
-      // QR first if set
-      if (settings['acceptQrCode'] == true) {
-        paymentMethods.add({'type': 'box', 'layout': 'vertical', 'flex': 1, 'contents': [
-          {'type': 'text', 'text': '📱', 'size': 'xxl', 'align': 'center'},
-          {'type': 'text', 'text': 'QR Code', 'size': 'xs', 'align': 'center', 'color': '#555555'},
-        ]});
-      }
-      if (settings['acceptCash'] == true) {
-        paymentMethods.add({'type': 'box', 'layout': 'vertical', 'flex': 1, 'contents': [
-          {'type': 'text', 'text': '💵', 'size': 'xxl', 'align': 'center'},
-          {'type': 'text', 'text': 'เงินสด', 'size': 'xs', 'align': 'center', 'color': '#555555'},
-        ]});
-      }
-      if (settings['acceptBankTransfer'] == true) {
-        paymentMethods.add({'type': 'box', 'layout': 'vertical', 'flex': 1, 'contents': [
-          {'type': 'text', 'text': '🏦', 'size': 'xxl', 'align': 'center'},
-          {'type': 'text', 'text': 'โอนธนาคาร', 'size': 'xs', 'align': 'center', 'color': '#555555'},
-        ]});
-      }
-      if (settings['acceptPromptPay'] == true) {
-        paymentMethods.add({'type': 'box', 'layout': 'vertical', 'flex': 1, 'contents': [
-          {'type': 'text', 'text': '⚡', 'size': 'xxl', 'align': 'center'},
-          {'type': 'text', 'text': 'พร้อมเพย์', 'size': 'xs', 'align': 'center', 'color': '#555555'},
-        ]});
-      }
+    final paymentUrl = 'https://liff.line.me/2009771520-R2Vrj84v?page=payment&orderId=${order.id}';
 
-      final bodyContents = <Map<String, dynamic>>[];
-
-      // QR image at top if set
-      final qrUrl = settings['qrCodeImageUrl'] as String?;
-      if (settings['acceptQrCode'] == true && qrUrl != null && qrUrl.isNotEmpty) {
-        bodyContents.add({'type': 'image', 'url': qrUrl, 'size': 'full', 'aspectRatio': '1:1', 'aspectMode': 'fit'});
-        bodyContents.add({'type': 'separator'});
-      }
-
-      if (paymentMethods.isNotEmpty) {
-        bodyContents.add({'type': 'text', 'text': 'วิธีชำระเงิน', 'weight': 'bold', 'size': 'sm', 'color': '#555555'});
-        bodyContents.add({'type': 'box', 'layout': 'horizontal', 'margin': 'sm', 'contents': paymentMethods});
-        bodyContents.add({'type': 'separator'});
-      }
-
-      final bankName = settings['bankName'] as String? ?? '';
-      final bankAccount = settings['bankAccount'] as String? ?? '';
-      final accountName = settings['accountName'] as String? ?? '';
-      final promptPay = settings['promptPayNumber'] as String? ?? '';
-
-      final infoRows = <Map<String, dynamic>>[];
-      if (bankName.isNotEmpty) infoRows.add({'type': 'box', 'layout': 'baseline', 'contents': [
-        {'type': 'text', 'text': 'ธนาคาร', 'size': 'sm', 'color': '#888888', 'flex': 3},
-        {'type': 'text', 'text': bankName, 'size': 'sm', 'weight': 'bold', 'flex': 5},
-      ]});
-      if (bankAccount.isNotEmpty) infoRows.add({'type': 'box', 'layout': 'baseline', 'margin': 'sm', 'contents': [
-        {'type': 'text', 'text': 'เลขบัญชี', 'size': 'sm', 'color': '#888888', 'flex': 3},
-        {'type': 'text', 'text': bankAccount, 'size': 'sm', 'weight': 'bold', 'flex': 5},
-      ]});
-      if (promptPay.isNotEmpty) infoRows.add({'type': 'box', 'layout': 'baseline', 'margin': 'sm', 'contents': [
-        {'type': 'text', 'text': 'พร้อมเพย์', 'size': 'sm', 'color': '#888888', 'flex': 3},
-        {'type': 'text', 'text': promptPay, 'size': 'sm', 'weight': 'bold', 'flex': 5},
-      ]});
-      if (accountName.isNotEmpty) infoRows.add({'type': 'box', 'layout': 'baseline', 'margin': 'sm', 'contents': [
-        {'type': 'text', 'text': 'ชื่อบัญชี', 'size': 'sm', 'color': '#888888', 'flex': 3},
-        {'type': 'text', 'text': accountName, 'size': 'sm', 'weight': 'bold', 'flex': 5},
-      ]});
-
-      if (infoRows.isNotEmpty) {
-        bodyContents.addAll(infoRows);
-        bodyContents.add({'type': 'separator'});
-      }
-
-      bodyContents.add({'type': 'box', 'layout': 'baseline', 'margin': 'md', 'contents': [
-        {'type': 'text', 'text': 'ยอดที่ต้องชำระ', 'size': 'sm', 'color': '#555555', 'flex': 4},
-        {'type': 'text', 'text': '฿$total', 'align': 'end', 'size': 'xl', 'weight': 'bold', 'color': '#FF6B00', 'flex': 3},
-      ]});
-
-      final flex = {
-        'type': 'flex',
-        'altText': '💳 ชำระเงิน ฿$total #$shortId',
-        'contents': {
-          'type': 'bubble',
-          'header': {
-            'type': 'box', 'layout': 'vertical', 'backgroundColor': '#4CAF50', 'paddingAll': '16px',
-            'contents': [
-              {'type': 'text', 'text': '✅ อาหารพร้อมแล้ว!', 'weight': 'bold', 'size': 'lg', 'color': '#ffffff'},
-              {'type': 'text', 'text': 'กรุณาชำระเงิน ฿$total', 'size': 'sm', 'color': '#ffffff'},
-            ],
-          },
-          'body': {'type': 'box', 'layout': 'vertical', 'spacing': 'md', 'contents': bodyContents},
-          'footer': {
-            'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
-            'contents': [
-              {'type': 'button', 'style': 'primary', 'color': '#FF6B00', 'action': {'type': 'uri', 'label': '🍽️ สั่งอาหารอีกครั้ง', 'uri': 'https://liff.line.me/2009771520-R2Vrj84v?page=order'}},
-            ],
-          },
+    final flex = {
+      'type': 'flex',
+      'altText': '✅ เสร็จสิ้น — กรุณาชำระเงิน ฿$total',
+      'contents': {
+        'type': 'bubble',
+        'header': {
+          'type': 'box', 'layout': 'vertical', 'backgroundColor': '#4CAF50', 'paddingAll': '16px',
+          'contents': [
+            {'type': 'text', 'text': '✅ เสร็จสิ้น', 'weight': 'bold', 'size': 'lg', 'color': '#ffffff'},
+            {'type': 'text', 'text': '#$shortId', 'size': 'sm', 'color': '#ffffff'},
+          ],
         },
-      };
-      ApiService().pushFlex(order.customerId, jsonEncode(flex));
-    }).catchError((_) {
-      // fallback: send simple text
-      ApiService().pushFlex(order.customerId, jsonEncode({
-        'type': 'text', 'text': '✅ อาหารพร้อมแล้ว! กรุณาชำระเงิน ฿${order.totalPrice.toStringAsFixed(0)}',
-      }));
-    });
+        'body': {
+          'type': 'box', 'layout': 'vertical', 'spacing': 'md',
+          'contents': [
+            ...itemRows,
+            {'type': 'separator', 'margin': 'sm'},
+            {'type': 'box', 'layout': 'baseline', 'contents': [
+              {'type': 'text', 'text': 'ยอดรวม', 'size': 'sm', 'color': '#555555', 'flex': 4},
+              {'type': 'text', 'text': '฿$total', 'align': 'end', 'size': 'md', 'weight': 'bold', 'color': '#FF6B00', 'flex': 2},
+            ]},
+          ],
+        },
+        'footer': {
+          'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
+          'contents': [
+            {'type': 'button', 'style': 'primary', 'color': '#FF6B00', 'action': {'type': 'uri', 'label': '💳 ชำระเงิน', 'uri': paymentUrl}},
+            {'type': 'button', 'style': 'secondary', 'action': {'type': 'uri', 'label': '🍽️ สั่งอาหารอีกครั้ง', 'uri': 'https://liff.line.me/2009771520-R2Vrj84v?page=order'}},
+          ],
+        },
+      },
+    };
+    ApiService().pushFlex(order.customerId, jsonEncode(flex));
   }
 
   void _sendFlex(OrderModel order, String label, String color, String shortId,

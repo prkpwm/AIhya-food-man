@@ -326,6 +326,7 @@ var PAGES = {
   favorites: renderPageFavorites,
   cart: renderPageCart,
   contact: renderPageContact,
+  payment: renderPagePayment,
 };
 
 function getCurrentPage() {
@@ -357,6 +358,13 @@ function renderPageCart() {
 
 function renderPageContact() {
   document.body.innerHTML = buildSimplePage('📞', 'ติดต่อร้าน', renderContactContent());
+}
+
+function renderPagePayment() {
+  var params = new URLSearchParams(window.location.search);
+  var orderId = params.get('orderId') || '';
+  document.body.innerHTML = buildSimplePage('💳', 'ชำระเงิน', '<div id="payment-content"><div class="loading">กำลังโหลด...</div></div>');
+  loadPaymentInfo(orderId);
 }
 
 function buildSimplePage(icon, title, bodyHtml) {
@@ -426,6 +434,56 @@ async function loadOrderStatus() {
   }
 }
 
+async function loadPaymentInfo(orderId) {
+  try {
+    var settingsRes = await fetch('/api/settings?merchantId=merchant-001');
+    var settingsData = await settingsRes.json();
+    var s = settingsData.data || {};
+
+    var html = '';
+
+    // QR image at top if set
+    if (s.acceptQrCode && s.qrCodeImageBase64) {
+      html += '<div class="pay-qr"><img src="/api/settings/qr?merchantId=merchant-001" alt="QR Code"/></div>';
+    }
+
+    // payment methods row
+    var methods = [];
+    if (s.acceptQrCode) methods.push('<div class="pay-method"><span>📱</span><span>QR Code</span></div>');
+    if (s.acceptCash) methods.push('<div class="pay-method"><span>💵</span><span>เงินสด</span></div>');
+    if (s.acceptBankTransfer) methods.push('<div class="pay-method"><span>🏦</span><span>โอนธนาคาร</span></div>');
+    if (s.acceptPromptPay) methods.push('<div class="pay-method"><span>⚡</span><span>พร้อมเพย์</span></div>');
+
+    if (methods.length > 0) {
+      html += '<div class="pay-section-title">วิธีชำระเงิน</div>';
+      html += '<div class="pay-methods">' + methods.join('') + '</div>';
+    }
+
+    // bank info
+    var info = [];
+    if (s.bankName) info.push(['ธนาคาร', s.bankName]);
+    if (s.bankAccount) info.push(['เลขบัญชี', s.bankAccount]);
+    if (s.promptPayNumber) info.push(['พร้อมเพย์', s.promptPayNumber]);
+    if (s.accountName) info.push(['ชื่อบัญชี', s.accountName]);
+
+    if (info.length > 0) {
+      html += '<div class="pay-info-card">';
+      info.forEach(function(row) {
+        html += '<div class="pay-info-row"><span class="pay-info-label">' + row[0] + '</span><span class="pay-info-value">' + row[1] + '</span></div>';
+      });
+      html += '</div>';
+    }
+
+    if (html === '') {
+      html = '<div class="empty-state">ยังไม่ได้ตั้งค่าการชำระเงิน</div>';
+    }
+
+    document.getElementById('payment-content').innerHTML = html;
+  } catch(e) {
+    document.getElementById('payment-content').innerHTML = '<div class="empty-state">เกิดข้อผิดพลาด</div>';
+  }
+}
+
 var PAGE_CSS = `
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f7f7;min-height:100vh}
@@ -455,6 +513,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .contact-icon{font-size:20px;width:28px;text-align:center}
 .toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:50px;font-size:14px;opacity:0;transition:opacity .3s;z-index:100;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1}
+.pay-qr{text-align:center;margin-bottom:16px}.pay-qr img{width:100%;max-width:260px;border-radius:12px;border:1px solid #eee}
+.pay-section-title{font-size:13px;font-weight:700;color:#555;margin-bottom:8px}
+.pay-methods{display:flex;gap:8px;margin-bottom:16px}
+.pay-method{flex:1;background:#fff;border-radius:12px;padding:12px 4px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:4px;font-size:11px;color:#555}
+.pay-method span:first-child{font-size:24px}
+.pay-info-card{background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px}
+.pay-info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:14px}
+.pay-info-row:last-child{border-bottom:none}
+.pay-info-label{color:#888}
+.pay-info-value{font-weight:700}
 `;
 
 async function initLiff() {
