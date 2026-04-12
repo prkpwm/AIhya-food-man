@@ -5,7 +5,7 @@ ensureInit();
 
 export default async function PaymentPage({ searchParams }: { searchParams: Promise<{ orderId?: string }> }) {
   const { orderId } = await searchParams;
-  const order = orderId ? getOrder(orderId) : null;
+  const order = orderId ? await getOrder(orderId) : null;
 
   if (!order) {
     return (
