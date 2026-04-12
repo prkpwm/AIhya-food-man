@@ -204,28 +204,27 @@ class _OrderCard extends ConsumerWidget {
   }
 
   Future<void> _confirmReject(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    final note = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('ปฏิเสธออเดอร์?', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('ยืนยันการปฏิเสธออเดอร์ของ ${order.customerName}'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ยกเลิก')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('ปฏิเสธ', style: TextStyle(color: Color(0xFFF44336), fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => _RejectSheet(customerName: order.customerName),
     );
-    if (confirmed != true) return;
+    if (note == null) return; // cancelled
     await ref.read(orderListProvider.notifier).updateStatus(order.id, OrderStatus.cancelled);
-    _pushRejectFlex(order);
+    _pushRejectFlex(order, note);
   }
 
-  void _pushRejectFlex(OrderModel order) {
+  void _pushRejectFlex(OrderModel order, String note) {
     final shortId = order.id.split('-').last;
+    final reasonContents = note.isNotEmpty
+        ? [
+            {'type': 'separator', 'margin': 'sm'},
+            {'type': 'text', 'text': '📝 เหตุผล: $note', 'size': 'sm', 'color': '#555555', 'wrap': true},
+          ]
+        : <Map<String, dynamic>>[];
+
     final flex = {
       'type': 'flex',
       'altText': '❌ ออเดอร์ถูกปฏิเสธ #$shortId',
@@ -242,12 +241,111 @@ class _OrderCard extends ConsumerWidget {
           'type': 'box', 'layout': 'vertical', 'spacing': 'md',
           'contents': [
             {'type': 'text', 'text': 'ขออภัย ทางร้านไม่สามารถรับออเดอร์นี้ได้', 'size': 'sm', 'color': '#555555', 'wrap': true},
+            ...reasonContents,
             {'type': 'text', 'text': 'กรุณาสั่งใหม่อีกครั้ง', 'size': 'sm', 'color': '#999999'},
           ],
         },
       },
     };
     ApiService().pushFlex(order.customerId, jsonEncode(flex));
+  }
+}
+
+// ─── Reject Sheet ─────────────────────────────────────────────────────────────
+
+class _RejectSheet extends StatefulWidget {
+  final String customerName;
+  const _RejectSheet({required this.customerName});
+
+  @override
+  State<_RejectSheet> createState() => _RejectSheetState();
+}
+
+class _RejectSheetState extends State<_RejectSheet> {
+  static const _reasons = [
+    'วัตถุดิบหมด',
+    'ร้านปิดแล้ว',
+    'ยุ่งมาก รับไม่ได้',
+    'สั่งผิดเมนู',
+    'ราคาไม่ถูกต้อง',
+    'อื่นๆ',
+  ];
+  String? _selected;
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  String get _finalNote => _selected == 'อื่นๆ' ? _ctrl.text.trim() : (_selected ?? '');
+  bool get _canConfirm => _selected != null && (_selected != 'อื่นๆ' || _ctrl.text.trim().isNotEmpty);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('ปฏิเสธออเดอร์', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text('เหตุผลที่จะส่งให้ ${widget.customerName}',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E))),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _selected,
+            hint: const Text('เลือกเหตุผล'),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: const Color(0xFFF5F5F5),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+            items: _reasons.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+            onChanged: (v) => setState(() { _selected = v; _ctrl.clear(); }),
+          ),
+          if (_selected == 'อื่นๆ') ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _ctrl,
+              autofocus: true,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: 'ระบุเหตุผล...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true, fillColor: const Color(0xFFF5F5F5),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context, null),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                ),
+                child: const Text('ยกเลิก'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _canConfirm ? () => Navigator.pop(context, _finalNote) : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF44336),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                ),
+                child: const Text('ยืนยันปฏิเสธ', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ]),
+        ],
+      ),
+    );
   }
 
   OrderStatus? _nextStatus(OrderStatus s) {
