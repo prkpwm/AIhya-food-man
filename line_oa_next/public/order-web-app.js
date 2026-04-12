@@ -511,13 +511,20 @@ async function loadPaymentInfo(orderId) {
         + '</div>';
     }
 
-    // ── Bank/PromptPay zone ───────────────────────────────────────────────────
-    if (s.acceptBankTransfer || s.acceptPromptPay) {
+    // ── Bank zone ─────────────────────────────────────────────────────────────
+    if (s.acceptBankTransfer) {
       html += '<div id="zone-bank" class="pay-zone" style="display:none"><div class="pay-info-card">';
       var binfo = [];
       if (s.bankName) binfo.push(['ธนาคาร', s.bankName]);
       if (s.bankAccount) binfo.push(['เลขบัญชี', s.bankAccount]);
       binfo.forEach(function(r) { html += '<div class="pay-info-row"><span class="pay-info-label">' + r[0] + '</span><span class="pay-info-value">' + r[1] + '</span></div>'; });
+      html += '</div>' + _slipUploadHtml(orderId) + '</div>';
+    }
+
+    // ── PromptPay zone ────────────────────────────────────────────────────────
+    if (s.acceptPromptPay) {
+      html += '<div id="zone-promptpay" class="pay-zone" style="display:none"><div class="pay-info-card">';
+      if (s.promptPayNumber) html += '<div class="pay-info-row"><span class="pay-info-label">พร้อมเพย์</span><span class="pay-info-value">' + s.promptPayNumber + '</span></div>';
       html += '</div>' + _slipUploadHtml(orderId) + '</div>';
     }
 
@@ -555,7 +562,7 @@ function selectPayMethod(id) {
   var el = document.getElementById('pm-' + id);
   if (el) el.classList.add('active');
   document.querySelectorAll('.pay-zone').forEach(function(z) { z.style.display = 'none'; });
-  var zoneMap = {qr:'zone-qr', cash:'zone-cash', bank:'zone-bank', promptpay:'zone-bank'};
+  var zoneMap = {qr:'zone-qr', cash:'zone-cash', bank:'zone-bank', promptpay:'zone-promptpay'};
   var zone = document.getElementById(zoneMap[id]);
   if (zone) zone.style.display = 'block';
 }
