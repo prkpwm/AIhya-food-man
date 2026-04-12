@@ -54,7 +54,7 @@ export async function upsertMenu(data: Omit<Menu, 'id'> & { id?: string }): Prom
   const doc = await MenuModel.findByIdAndUpdate(
     id,
     { ...data, _id: id },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: 'after' },
   ).lean();
   return docToMenu(doc as Record<string, unknown>);
 }
@@ -79,14 +79,14 @@ export async function upsertIngredient(data: Omit<Ingredient, 'id'> & { id?: str
   const doc = await IngredientModel.findByIdAndUpdate(
     id,
     { ...data, _id: id },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: 'after' },
   ).lean();
   return docToIngredient(doc as Record<string, unknown>);
 }
 
 export async function updateStock(id: string, quantity: number): Promise<Ingredient | null> {
   await connectDB();
-  const doc = await IngredientModel.findByIdAndUpdate(id, { quantity }, { new: true }).lean();
+  const doc = await IngredientModel.findByIdAndUpdate(id, { quantity }, { returnDocument: 'after' }).lean();
   return doc ? docToIngredient(doc as Record<string, unknown>) : null;
 }
 

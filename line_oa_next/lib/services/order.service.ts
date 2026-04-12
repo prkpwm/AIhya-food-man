@@ -61,7 +61,7 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
   const doc = await OrderModel.findByIdAndUpdate(
     id,
     { status, ...(status === 'completed' ? { estimatedWaitMinutes: 0 } : {}) },
-    { new: true },
+    { returnDocument: 'after' },
   ).lean();
   return doc ? docToOrder(doc as Record<string, unknown>) : null;
 }
