@@ -21,7 +21,7 @@ class NewOrderEvent {
 }
 
 class SseService {
-  static const _url = 'https://line-oa-next.onrender.com/api/orders/events';
+  static const _url = 'https://aihya-food-man.onrender.com/api/orders/events';
 
   final _controller = StreamController<NewOrderEvent>.broadcast();
   Stream<NewOrderEvent> get stream => _controller.stream;
@@ -60,7 +60,8 @@ class SseService {
       _eventSource!.callMethod('addEventListener', [
         'new-order',
         js.JsFunction.withThis((_, event) {
-          final data = (event as js.JsObject)['data'] as String?;
+          final jsEvent = js.JsObject.fromBrowserObject(event);
+          final data = jsEvent['data'] as String?;
           if (data == null) return;
           debugPrint('[SSE] web event data: $data');
           try {
