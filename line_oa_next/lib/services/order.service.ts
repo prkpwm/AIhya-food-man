@@ -30,3 +30,14 @@ export function getGroupedActiveOrders(merchantId: string): Record<string, numbe
   for (const order of active) for (const item of order.items) grouped[item.menuName] = (grouped[item.menuName] ?? 0) + item.quantity;
   return grouped;
 }
+
+export function getQueueInfo(orderId: string): { queuePosition: number; estimatedWaitMinutes: number } | null {
+  const order = orders.get(orderId);
+  if (!order) return null;
+  const active = [...orders.values()]
+    .filter((o) => o.merchantId === order.merchantId && ['pending', 'confirmed', 'preparing'].includes(o.status))
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const pos = active.findIndex((o) => o.id === orderId) + 1;
+  const totalWait = active.slice(0, pos).reduce((sum, o) => sum + o.estimatedWaitMinutes, 0);
+  return { queuePosition: pos > 0 ? pos : 1, estimatedWaitMinutes: totalWait };
+}

@@ -224,6 +224,33 @@ class _OrderCard extends ConsumerWidget {
       ],
     }).toList();
 
+    // for confirmed status, fetch queue info then push
+    if (newStatus == OrderStatus.confirmed) {
+      ApiService().getOrderQueueInfo(order.id).then((info) {
+        final queuePos = info['queuePosition'] as int? ?? 1;
+        final waitMin = info['estimatedWaitMinutes'] as int? ?? order.estimatedWaitMinutes;
+        final queueContents = [
+          {'type': 'separator', 'margin': 'sm'},
+          {'type': 'box', 'layout': 'horizontal', 'margin': 'sm', 'contents': [
+            {'type': 'text', 'text': '🔢 คิวของคุณ', 'size': 'sm', 'color': '#555555', 'flex': 4},
+            {'type': 'text', 'text': 'คิวที่ $queuePos', 'align': 'end', 'size': 'sm', 'weight': 'bold', 'color': '#2196F3', 'flex': 2},
+          ]},
+          {'type': 'box', 'layout': 'horizontal', 'contents': [
+            {'type': 'text', 'text': '⏱ รอประมาณ', 'size': 'sm', 'color': '#555555', 'flex': 4},
+            {'type': 'text', 'text': '$waitMin นาที', 'align': 'end', 'size': 'sm', 'weight': 'bold', 'color': '#FF6B00', 'flex': 2},
+          ]},
+        ];
+        _sendFlex(order, label, color, shortId, itemRows, queueContents);
+      }).catchError((_) {
+        _sendFlex(order, label, color, shortId, itemRows, []);
+      });
+    } else {
+      _sendFlex(order, label, color, shortId, itemRows, []);
+    }
+  }
+
+  void _sendFlex(OrderModel order, String label, String color, String shortId,
+      List<Map<String, dynamic>> itemRows, List<Map<String, dynamic>> extraContents) {
     final flex = {
       'type': 'flex',
       'altText': '$label #$shortId',
@@ -245,6 +272,7 @@ class _OrderCard extends ConsumerWidget {
               {'type': 'text', 'text': 'ยอดรวม', 'size': 'sm', 'color': '#555555', 'flex': 4},
               {'type': 'text', 'text': '฿${order.totalPrice.toStringAsFixed(0)}', 'align': 'end', 'size': 'md', 'weight': 'bold', 'color': '#FF6B00', 'flex': 2},
             ]},
+            ...extraContents,
           ],
         },
         'footer': {
@@ -256,7 +284,6 @@ class _OrderCard extends ConsumerWidget {
       },
     };
 
-    // fire and forget
     ApiService().pushFlex(order.customerId, jsonEncode(flex));
   }
 }

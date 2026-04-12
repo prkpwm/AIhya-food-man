@@ -126,6 +126,11 @@ class ApiService {
     return res.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getOrderQueueInfo(String id) async {
+    final res = await _nextDio.get('/orders/$id/queue');
+    return (res.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> getGroupedOrders({String merchantId = 'merchant-001'}) async {
     final res = await _dio.get('/orders/grouped', queryParameters: {'merchantId': merchantId});
     return (res.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
