@@ -367,6 +367,12 @@ function renderPagePayment() {
   loadPaymentInfo(orderId);
 }
 
+// for payment page: render immediately before liff.init completes
+var _earlyPage = getCurrentPage();
+if (_earlyPage === 'payment') {
+  renderPagePayment();
+}
+
 function buildSimplePage(icon, title, bodyHtml) {
   return '<style>' + PAGE_CSS + '</style>'
     + '<div class="page-header"><span class="page-icon">' + icon + '</span><span class="page-title">' + title + '</span></div>'
@@ -531,7 +537,11 @@ async function initLiff() {
     if (liff.isLoggedIn()) {
       var p = await liff.getProfile();
       userId = p.userId;
-    } else { liff.login(); }
+    } else {
+      // don't redirect to login on payment page — it's view-only
+      var page = getCurrentPage();
+      if (page !== 'payment') { liff.login(); }
+    }
   } catch(e) {}
 
   var page = getCurrentPage();
