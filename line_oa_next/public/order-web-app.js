@@ -655,7 +655,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 .pay-qr{text-align:center;margin-bottom:16px}
-.pay-qr img{width:100%;max-width:240px;border-radius:16px;border:1px solid #e8eaed;box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.pay-qr img{display:block;margin:0 auto;width:100%;max-width:240px;border-radius:16px;border:1px solid #e8eaed;box-shadow:0 4px 16px rgba(0,0,0,.1)}
 .pay-qr-loading{text-align:center;padding:40px;color:#999;font-size:14px}
 
 .pay-info-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px}
