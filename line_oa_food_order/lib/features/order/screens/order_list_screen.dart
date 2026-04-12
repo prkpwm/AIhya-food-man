@@ -203,6 +203,26 @@ class _OrderCard extends ConsumerWidget {
     );
   }
 
+  OrderStatus? _nextStatus(OrderStatus s) {
+    switch (s) {
+      case OrderStatus.pending: return OrderStatus.confirmed;
+      case OrderStatus.confirmed: return OrderStatus.preparing;
+      case OrderStatus.preparing: return OrderStatus.ready;
+      case OrderStatus.ready: return OrderStatus.completed;
+      default: return null;
+    }
+  }
+
+  String _nextLabel(OrderStatus s) {
+    switch (s) {
+      case OrderStatus.pending: return 'ยืนยัน';
+      case OrderStatus.confirmed: return 'เริ่มทำ';
+      case OrderStatus.preparing: return 'พร้อมส่ง';
+      case OrderStatus.ready: return 'เสร็จสิ้น';
+      default: return '';
+    }
+  }
+
   Future<void> _confirmReject(BuildContext context, WidgetRef ref) async {
     final note = await showModalBottomSheet<String>(
       context: context,
@@ -214,6 +234,92 @@ class _OrderCard extends ConsumerWidget {
     if (note == null) return; // cancelled
     await ref.read(orderListProvider.notifier).updateStatus(order.id, OrderStatus.cancelled);
     _pushRejectFlex(order, note);
+  }
+
+  void _pushStatusFlex(OrderModel order, OrderStatus newStatus) {
+    final statusLabel = {
+      OrderStatus.confirmed: '✅ ยืนยันออเดอร์แล้ว',
+      OrderStatus.preparing: '👨‍🍳 กำลังเตรียมอาหาร',
+      OrderStatus.ready: '🛵 อาหารพร้อมแล้ว',
+      OrderStatus.completed: '✅ เสร็จสิ้น',
+    };
+    final headerColor = {
+      OrderStatus.confirmed: '#2196F3',
+      OrderStatus.preparing: '#FF6B00',
+      OrderStatus.ready: '#9C27B0',
+      OrderStatus.completed: '#4CAF50',
+    };
+
+    final label = statusLabel[newStatus] ?? newStatus.displayName;
+    final color = headerColor[newStatus] ?? '#1A1A1A';
+    final shortId = order.id.split('-').last;
+
+    final itemRows = order.items.map((i) => {
+      'type': 'box', 'layout': 'baseline', 'contents': [
+        {'type': 'text', 'text': '${i.menuName} ×${i.quantity}', 'size': 'sm', 'color': '#555555', 'flex': 4},
+        {'type': 'text', 'text': '฿${i.totalPrice.toStringAsFixed(0)}', 'align': 'end', 'size': 'sm', 'flex': 2},
+      ],
+    }).toList();
+
+    if (newStatus == OrderStatus.confirmed) {
+      ApiService().getOrderQueueInfo(order.id).then((info) {
+        final queuePos = info['queuePosition'] as int? ?? 1;
+        final waitMin = info['estimatedWaitMinutes'] as int? ?? order.estimatedWaitMinutes;
+        final queueContents = [
+          {'type': 'separator', 'margin': 'sm'},
+          {'type': 'box', 'layout': 'horizontal', 'margin': 'sm', 'contents': [
+            {'type': 'text', 'text': '🔢 คิวของคุณ', 'size': 'sm', 'color': '#555555', 'flex': 4},
+            {'type': 'text', 'text': 'คิวที่ $queuePos', 'align': 'end', 'size': 'sm', 'weight': 'bold', 'color': '#2196F3', 'flex': 2},
+          ]},
+          {'type': 'box', 'layout': 'horizontal', 'contents': [
+            {'type': 'text', 'text': '⏱ รอประมาณ', 'size': 'sm', 'color': '#555555', 'flex': 4},
+            {'type': 'text', 'text': '$waitMin นาที', 'align': 'end', 'size': 'sm', 'weight': 'bold', 'color': '#FF6B00', 'flex': 2},
+          ]},
+        ];
+        _sendFlex(order, label, color, shortId, itemRows, queueContents);
+      }).catchError((_) {
+        _sendFlex(order, label, color, shortId, itemRows, []);
+      });
+    } else {
+      _sendFlex(order, label, color, shortId, itemRows, []);
+    }
+  }
+
+  void _sendFlex(OrderModel order, String label, String color, String shortId,
+      List<Map<String, dynamic>> itemRows, List<Map<String, dynamic>> extraContents) {
+    final flex = {
+      'type': 'flex',
+      'altText': '$label #$shortId',
+      'contents': {
+        'type': 'bubble',
+        'header': {
+          'type': 'box', 'layout': 'vertical', 'backgroundColor': color, 'paddingAll': '16px',
+          'contents': [
+            {'type': 'text', 'text': label, 'weight': 'bold', 'size': 'lg', 'color': '#ffffff'},
+            {'type': 'text', 'text': '#$shortId', 'size': 'sm', 'color': '#FFFFFF'},
+          ],
+        },
+        'body': {
+          'type': 'box', 'layout': 'vertical', 'spacing': 'md',
+          'contents': [
+            ...itemRows,
+            {'type': 'separator', 'margin': 'sm'},
+            {'type': 'box', 'layout': 'baseline', 'contents': [
+              {'type': 'text', 'text': 'ยอดรวม', 'size': 'sm', 'color': '#555555', 'flex': 4},
+              {'type': 'text', 'text': '฿${order.totalPrice.toStringAsFixed(0)}', 'align': 'end', 'size': 'md', 'weight': 'bold', 'color': '#FF6B00', 'flex': 2},
+            ]},
+            ...extraContents,
+          ],
+        },
+        'footer': {
+          'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
+          'contents': [
+            {'type': 'button', 'style': 'secondary', 'action': {'type': 'message', 'label': '📦 ดูสถานะ', 'text': 'สถานะ #$shortId'}},
+          ],
+        },
+      },
+    };
+    ApiService().pushFlex(order.customerId, jsonEncode(flex));
   }
 
   void _pushRejectFlex(OrderModel order, String note) {
