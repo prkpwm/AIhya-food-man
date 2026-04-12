@@ -131,6 +131,29 @@ class ApiService {
     return (res.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getStoreSettings({String merchantId = 'merchant-001'}) async {
+    final res = await _nextDio.get('/settings', queryParameters: {'merchantId': merchantId});
+    return (res.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> saveStoreSettings({
+    required Map<String, String> data,
+    Uint8List? qrImageBytes,
+    String qrImageName = 'qr.jpg',
+  }) async {
+    final form = FormData.fromMap({
+      ...data,
+      if (qrImageBytes != null)
+        'qrImage': MultipartFile.fromBytes(
+          qrImageBytes,
+          filename: qrImageName,
+          contentType: DioMediaType.parse('image/jpeg'),
+        ),
+    });
+    final res = await _nextDio.post('/settings', data: form);
+    return res.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> getGroupedOrders({String merchantId = 'merchant-001'}) async {
     final res = await _nextDio.get('/orders/grouped', queryParameters: {'merchantId': merchantId});
     return (res.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;

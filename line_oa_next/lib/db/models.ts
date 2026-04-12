@@ -57,3 +57,21 @@ const IngredientSchema = new Schema({
 });
 
 export const IngredientModel = models.Ingredient ?? model('Ingredient', IngredientSchema);
+
+// ─── Store Settings ───────────────────────────────────────────────────────────
+
+const StoreSettingsSchema = new Schema({
+  _id: { type: String, required: true }, // merchantId
+  shopName: { type: String, default: '' },
+  acceptCash: { type: Boolean, default: true },
+  acceptBankTransfer: { type: Boolean, default: false },
+  acceptPromptPay: { type: Boolean, default: false },
+  acceptQrCode: { type: Boolean, default: false },
+  bankName: { type: String, default: '' },
+  bankAccount: { type: String, default: '' },
+  accountName: { type: String, default: '' },
+  promptPayNumber: { type: String, default: '' },
+  qrCodeImageUrl: { type: String, default: null },
+});
+
+export const StoreSettingsModel = models.StoreSettings ?? model('StoreSettings', StoreSettingsSchema);

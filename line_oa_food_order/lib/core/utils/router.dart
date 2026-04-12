@@ -6,7 +6,7 @@ import 'package:line_oa_food_order/features/menu/screens/menu_list_screen.dart';
 import 'package:line_oa_food_order/features/order/screens/order_list_screen.dart';
 import 'package:line_oa_food_order/features/stock/screens/stock_screen.dart';
 import 'package:line_oa_food_order/features/generator/screens/generator_screen.dart';
-import 'package:line_oa_food_order/features/subscription/screens/subscription_screen.dart';
+import 'package:line_oa_food_order/features/settings/screens/settings_screen.dart';
 import 'package:line_oa_food_order/shared/widgets/main_scaffold.dart';
 
 final router = GoRouter(
@@ -21,7 +21,7 @@ final router = GoRouter(
         GoRoute(path: '/orders', builder: (_, __) => const OrderListScreen()),
         GoRoute(path: '/stock', builder: (_, __) => const StockScreen()),
         GoRoute(path: '/generator', builder: (_, __) => const GeneratorScreen()),
-        GoRoute(path: '/subscription', builder: (_, __) => const SubscriptionScreen()),
+        GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       ],
     ),
   ],

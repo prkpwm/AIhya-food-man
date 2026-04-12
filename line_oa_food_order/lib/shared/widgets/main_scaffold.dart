@@ -11,7 +11,7 @@ class MainScaffold extends StatelessWidget {
     if (path.startsWith('/orders')) return 1;
     if (path.startsWith('/stock')) return 2;
     if (path.startsWith('/generator')) return 3;
-    if (path.startsWith('/subscription')) return 4;
+    if (path.startsWith('/settings')) return 4;
     return 0;
   }
 
@@ -35,7 +35,7 @@ class MainScaffold extends StatelessWidget {
                 _NavItem(icon: Icons.receipt_long_outlined, activeIcon: Icons.receipt_long, label: 'ออเดอร์', index: 1, selected: selected, onTap: () => context.go('/orders')),
                 _NavItem(icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2, label: 'สต๊อก', index: 2, selected: selected, onTap: () => context.go('/stock')),
                 _NavItem(icon: Icons.code_outlined, activeIcon: Icons.code, label: 'Generator', index: 3, selected: selected, onTap: () => context.go('/generator')),
-                _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'แพ็กเกจ', index: 4, selected: selected, onTap: () => context.go('/subscription')),
+                _NavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings, label: 'ตั้งค่า', index: 4, selected: selected, onTap: () => context.go('/settings')),
               ],
             ),
           ),
