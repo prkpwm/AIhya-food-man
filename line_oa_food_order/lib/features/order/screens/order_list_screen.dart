@@ -36,7 +36,10 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
   }
 
   void _onNewOrder(NewOrderEvent event) {
-    ref.read(orderListProvider.notifier).refresh();
+    debugPrint('[SSE] new-order received: ${event.orderId} from ${event.customerName}');
+    ref.read(orderListProvider.notifier).refresh().then((_) {
+      debugPrint('[SSE] orderListProvider refreshed');
+    });
     ref.read(groupedMenuOrdersProvider.notifier).refresh();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showMaterialBanner(

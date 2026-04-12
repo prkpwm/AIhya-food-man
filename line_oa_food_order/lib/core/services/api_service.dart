@@ -26,7 +26,7 @@ class ApiService {
   // Use local Next.js API when running in debug mode on web (avoids CORS — Next.js adds headers)
   // static String get baseUrl => (kIsWeb && kDebugMode) ? _local : _prod;
   static String get baseUrl => _prod;
-  static String get nextBaseUrl =>  _prod;
+  static String get nextBaseUrl => _prod;
 
   final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
@@ -117,7 +117,7 @@ class ApiService {
   // ─── Orders ─────────────────────────────────────────────────────────────────
 
   Future<List<dynamic>> getOrders({String merchantId = 'merchant-001'}) async {
-    final res = await _dio.get('/orders', queryParameters: {'merchantId': merchantId});
+    final res = await _nextDio.get('/orders', queryParameters: {'merchantId': merchantId});
     return (res.data as Map<String, dynamic>)['data'] as List<dynamic>;
   }
 
@@ -132,7 +132,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getGroupedOrders({String merchantId = 'merchant-001'}) async {
-    final res = await _dio.get('/orders/grouped', queryParameters: {'merchantId': merchantId});
+    final res = await _nextDio.get('/orders/grouped', queryParameters: {'merchantId': merchantId});
     return (res.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
   }
 
