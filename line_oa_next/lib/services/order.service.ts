@@ -1,43 +1,95 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Order, OrderItem, OrderStatus } from '../types';
+import { connectDB } from '../db/mongoose';
+import { OrderModel } from '../db/models';
 
-const orders: Map<string, Order> = new Map();
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
-export function createOrder(merchantId: string, customerId: string, customerName: string, items: OrderItem[], note?: string): Order {
+function docToOrder(doc: Record<string, unknown>): Order {
+  return {
+    id: doc._id as string,
+    merchantId: doc.merchantId as string,
+    customerId: doc.customerId as string,
+    customerName: doc.customerName as string,
+    items: doc.items as OrderItem[],
+    status: doc.status as OrderStatus,
+    totalPrice: doc.totalPrice as number,
+    estimatedWaitMinutes: doc.estimatedWaitMinutes as number,
+    note: (doc.note as string | null) ?? null,
+    createdAt: new Date(doc.createdAt as string),
+    updatedAt: new Date(doc.updatedAt as string),
+  };
+}
+
+// ─── public API ───────────────────────────────────────────────────────────────
+
+export async function createOrder(
+  merchantId: string, customerId: string, customerName: string,
+  items: OrderItem[], note?: string,
+): Promise<Order> {
   const totalPrice = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
   const estimatedWaitMinutes = items.reduce((sum, i) => sum + i.quantity * 5, 0);
-  const order: Order = { id: uuidv4(), merchantId, customerId, customerName, items, status: 'pending', totalPrice, estimatedWaitMinutes, note: note ?? null, createdAt: new Date(), updatedAt: new Date() };
-  orders.set(order.id, order);
-  return order;
+  const id = uuidv4();
+  await connectDB();
+  const doc = await OrderModel.create({
+    _id: id, merchantId, customerId, customerName, items,
+    status: 'pending', totalPrice, estimatedWaitMinutes, note: note ?? null,
+  });
+  return docToOrder(doc.toObject());
 }
-export function getOrder(id: string): Order | null { return orders.get(id) ?? null; }
-export function getOrdersByMerchant(merchantId: string): Order[] {
-  return [...orders.values()].filter((o) => o.merchantId === merchantId);
+
+export async function getOrder(id: string): Promise<Order | null> {
+  await connectDB();
+  const doc = await OrderModel.findById(id).lean();
+  return doc ? docToOrder(doc as Record<string, unknown>) : null;
 }
-export function getOrdersByCustomer(customerId: string): Order[] {
-  return [...orders.values()].filter((o) => o.customerId === customerId);
+
+export async function getOrdersByMerchant(merchantId: string): Promise<Order[]> {
+  await connectDB();
+  const docs = await OrderModel.find({ merchantId }).sort({ createdAt: -1 }).lean();
+  return docs.map((d) => docToOrder(d as Record<string, unknown>));
 }
-export function updateOrderStatus(id: string, status: OrderStatus): Order | null {
-  const order = orders.get(id);
-  if (!order) return null;
-  const updated = { ...order, status, estimatedWaitMinutes: status === 'completed' ? 0 : order.estimatedWaitMinutes, updatedAt: new Date() };
-  orders.set(id, updated);
-  return updated;
+
+export async function getOrdersByCustomer(customerId: string): Promise<Order[]> {
+  await connectDB();
+  const docs = await OrderModel.find({ customerId }).sort({ createdAt: -1 }).lean();
+  return docs.map((d) => docToOrder(d as Record<string, unknown>));
 }
-export function getGroupedActiveOrders(merchantId: string): Record<string, number> {
-  const active = [...orders.values()].filter((o) => o.merchantId === merchantId && ['pending','confirmed','preparing','ready'].includes(o.status));
+
+export async function updateOrderStatus(id: string, status: OrderStatus): Promise<Order | null> {
+  await connectDB();
+  const doc = await OrderModel.findByIdAndUpdate(
+    id,
+    { status, ...(status === 'completed' ? { estimatedWaitMinutes: 0 } : {}) },
+    { new: true },
+  ).lean();
+  return doc ? docToOrder(doc as Record<string, unknown>) : null;
+}
+
+export async function getGroupedActiveOrders(merchantId: string): Promise<Record<string, number>> {
+  await connectDB();
+  const docs = await OrderModel.find({
+    merchantId,
+    status: { $in: ['pending', 'confirmed', 'preparing', 'ready'] },
+  }).lean();
   const grouped: Record<string, number> = {};
-  for (const order of active) for (const item of order.items) grouped[item.menuName] = (grouped[item.menuName] ?? 0) + item.quantity;
+  for (const order of docs) {
+    for (const item of (order.items as OrderItem[])) {
+      grouped[item.menuName] = (grouped[item.menuName] ?? 0) + item.quantity;
+    }
+  }
   return grouped;
 }
 
-export function getQueueInfo(orderId: string): { queuePosition: number; estimatedWaitMinutes: number } | null {
-  const order = orders.get(orderId);
+export async function getQueueInfo(orderId: string): Promise<{ queuePosition: number; estimatedWaitMinutes: number } | null> {
+  await connectDB();
+  const order = await OrderModel.findById(orderId).lean();
   if (!order) return null;
-  const active = [...orders.values()]
-    .filter((o) => o.merchantId === order.merchantId && ['pending', 'confirmed', 'preparing'].includes(o.status))
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  const pos = active.findIndex((o) => o.id === orderId) + 1;
-  const totalWait = active.slice(0, pos).reduce((sum, o) => sum + o.estimatedWaitMinutes, 0);
+  const active = await OrderModel.find({
+    merchantId: (order as Record<string, unknown>).merchantId,
+    status: { $in: ['pending', 'confirmed', 'preparing'] },
+  }).sort({ createdAt: 1 }).lean();
+  const pos = active.findIndex((o) => String(o._id) === orderId) + 1;
+  const totalWait = active.slice(0, pos).reduce((sum, o) => sum + ((o as Record<string, unknown>).estimatedWaitMinutes as number), 0);
   return { queuePosition: pos > 0 ? pos : 1, estimatedWaitMinutes: totalWait };
 }

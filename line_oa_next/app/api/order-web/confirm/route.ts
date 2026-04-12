@@ -4,11 +4,11 @@ import * as orderService from '@/lib/services/order.service';
 import * as lineService from '@/lib/services/line.service';
 import { emitNewOrder } from '@/lib/services/order_events';
 import { env } from '@/lib/config/env';
-import { OrderItem } from '@/lib/types';
+import { Order, OrderItem } from '@/lib/types';
 
 ensureInit();
 
-function buildConfirmFlex(order: ReturnType<typeof orderService.createOrder>, paymentUrl: string) {
+function buildConfirmFlex(order: Order, paymentUrl: string) {
   const itemRows = order.items.map((i) => {
     const spice = i.spiceLevel > 0 ? ` (เผ็ด ${i.spiceLevel})` : '';
     const note = i.customNote ? ` [${i.customNote}]` : '';
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: '400', en: 'Missing fields', th: 'ข้อมูลไม่ครบ' }, { status: 400 });
     }
 
-    const order = orderService.createOrder(merchantId ?? 'merchant-001', userId, 'ลูกค้า LINE', items);
+    const order = await orderService.createOrder(merchantId ?? 'merchant-001', userId, 'ลูกค้า LINE', items);
     const paymentUrl = `${env.renderExternalUrl}/payment?orderId=${order.id}`;
     const flex = buildConfirmFlex(order, paymentUrl);
 

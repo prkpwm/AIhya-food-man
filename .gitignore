@@ -14,6 +14,8 @@ desktop.ini
 line_oa_api/node_modules/
 line_oa_api/dist/
 line_oa_api/.env
+line_oa_next/.env.local
+line_oa_next/.env
 
 # ─── Flutter ─────────────────────────────────────────────────────────────────
 line_oa_food_order/.dart_tool/
