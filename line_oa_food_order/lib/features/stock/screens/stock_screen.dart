@@ -137,22 +137,30 @@ class _IngredientTile extends ConsumerWidget {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          width: 44, height: 44,
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            isOut ? Icons.close_rounded : Icons.check_rounded,
-            color: statusColor, size: 20,
+        leading: GestureDetector(
+          onTap: () => _toggleSoldOut(context, ref, isOut),
+          child: Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isOut ? Icons.close_rounded : Icons.check_rounded,
+              color: statusColor, size: 20,
+            ),
           ),
         ),
         title: Text(ingredient.name,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: isOut ? const Color(0xFFAAAAAA) : const Color(0xFF1A1A1A),
+              decoration: isOut ? TextDecoration.lineThrough : null,
+            )),
         subtitle: Text(
           isOut
-              ? 'หมดแล้ว'
+              ? 'หมดแล้ว — แตะ ✓ เพื่อเปิดขาย'
               : isLow
                   ? 'ใกล้หมด · ${ingredient.quantity} ${ingredient.unit}'
                   : '${ingredient.quantity} ${ingredient.unit}',
@@ -171,6 +179,18 @@ class _IngredientTile extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _toggleSoldOut(BuildContext context, WidgetRef ref, bool isOut) async {
+    final newQty = isOut ? ingredient.lowStockThreshold + 0.1 : 0.0;
+    await ref.read(ingredientListProvider.notifier).updateQuantity(ingredient.id, newQty);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isOut ? '${ingredient.name} เปิดขายแล้ว' : '${ingredient.name} ตั้งเป็นหมดแล้ว'),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ));
+    }
   }
 
   void _showEditSheet(BuildContext context, WidgetRef ref) {
