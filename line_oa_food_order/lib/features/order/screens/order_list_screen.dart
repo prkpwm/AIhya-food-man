@@ -37,7 +37,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
 
   void _onNewOrder(NewOrderEvent event) {
     ref.read(orderListProvider.notifier).refresh();
-    ref.invalidate(groupedMenuOrdersProvider);
+    ref.read(groupedMenuOrdersProvider.notifier).refresh();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(

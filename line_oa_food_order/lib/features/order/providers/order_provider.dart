@@ -15,11 +15,19 @@ class OrderNotifier extends AsyncNotifier<List<OrderModel>> {
 
   Future<void> updateStatus(String id, OrderStatus status) async {
     await _api.updateOrderStatus(id, status.name);
-    ref.invalidateSelf();
+    await _reload();
   }
 
   Future<void> refresh() async {
-    ref.invalidateSelf();
+    await _reload();
+  }
+
+  Future<void> _reload() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final data = await _api.getOrders();
+      return data.map((e) => OrderModel.fromJson(e as Map<String, dynamic>)).toList();
+    });
   }
 }
 
@@ -28,6 +36,14 @@ final activeOrdersProvider = Provider<List<OrderModel>>((ref) {
   return (ref.watch(orderListProvider).valueOrNull ?? []).where((o) => activeStatuses.contains(o.status)).toList();
 });
 
-final groupedMenuOrdersProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  return _api.getGroupedOrders();
-});
+final groupedMenuOrdersProvider = AsyncNotifierProvider<GroupedOrdersNotifier, Map<String, dynamic>>(GroupedOrdersNotifier.new);
+
+class GroupedOrdersNotifier extends AsyncNotifier<Map<String, dynamic>> {
+  @override
+  Future<Map<String, dynamic>> build() => ApiService().getGroupedOrders();
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => ApiService().getGroupedOrders());
+  }
+}
