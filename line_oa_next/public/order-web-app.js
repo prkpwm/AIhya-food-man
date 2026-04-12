@@ -365,7 +365,6 @@ function buildSimplePage(icon, title, bodyHtml) {
     + '<div class="page-body">' + bodyHtml + '</div>'
     + '<div class="toast" id="toast"></div>';
 }
-
 function renderStatusContent() {
   return '<div id="status-content"><div class="loading">กำลังโหลด...</div></div>';
 }
@@ -471,6 +470,12 @@ async function initLiff() {
   if (page !== 'order') {
     PAGES[page]();
   }
+
+  // hide loading, show app
+  var loadingEl = document.getElementById('liff-loading');
+  var appEl = document.getElementById('liff-app');
+  if (loadingEl) loadingEl.style.display = 'none';
+  if (appEl) appEl.style.display = '';
 }
 
 initLiff();

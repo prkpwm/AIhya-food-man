@@ -49,6 +49,12 @@ export function buildOrderWebHtml(menus: Menu[]): string {
   <style>${CSS}</style>
 </head>
 <body>
+  <div id="liff-loading">
+    <div class="liff-spinner"></div>
+    <div class="liff-loading-text">กำลังโหลด...</div>
+  </div>
+
+  <div id="liff-app" style="display:none">
   <div class="header">
     <div class="header-top"><div class="shop-name">🍽️ สั่งอาหาร</div><button class="sold-out-toggle" id="sold-out-toggle" onclick="toggleSoldOut()">ซ่อนหมด</button></div>
     <div class="search-bar">
@@ -74,6 +80,7 @@ export function buildOrderWebHtml(menus: Menu[]): string {
   <div class="overlay" id="cart-overlay"></div>
   <div class="sheet" id="cart-sheet"><div id="cart-content"></div></div>
   <div class="toast" id="toast"></div>
+  </div><!-- #liff-app -->
 
   <script>window.__MENUS__ = ${menusJson};</script>
   <script src="/order-web-app.js"></script>
@@ -90,6 +97,10 @@ export function buildOrderWebHtml(menus: Menu[]): string {
 const CSS = `
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f7f7;padding-bottom:80px}
+#liff-loading{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999}
+.liff-spinner{width:44px;height:44px;border:4px solid #f0f0f0;border-top-color:#FF6B00;border-radius:50%;animation:spin .7s linear infinite}
+.liff-loading-text{font-size:14px;color:#999}
+@keyframes spin{to{transform:rotate(360deg)}}
 .header{background:#fff;position:sticky;top:0;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .header-top{padding:14px 16px 8px;display:flex;align-items:center;gap:10px}
 .shop-name{font-size:18px;font-weight:700;flex:1}
