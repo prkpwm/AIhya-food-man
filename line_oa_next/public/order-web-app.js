@@ -468,64 +468,130 @@ async function loadPaymentInfo(orderId) {
       html += '<div class="receipt">';
       html += '<div class="receipt-title">' + (s.shopName || 'ร้านอาหาร') + '</div>';
       html += '<div class="receipt-divider"></div>';
-
-      // items
       (order.items || []).forEach(function(item) {
-        html += '<div class="receipt-row">'
-          + '<span>' + item.menuName + ' ×' + item.quantity + '</span>'
-          + '<span>฿' + (item.unitPrice * item.quantity).toFixed(0) + '</span>'
-          + '</div>';
+        html += '<div class="receipt-row"><span>' + item.menuName + ' ×' + item.quantity + '</span><span>฿' + (item.unitPrice * item.quantity).toFixed(0) + '</span></div>';
       });
-
       html += '<div class="receipt-divider"></div>';
       html += '<div class="receipt-row"><span>ราคาก่อน VAT</span><span>฿' + subtotal.toFixed(0) + '</span></div>';
-      if (vatRate > 0) {
-        html += '<div class="receipt-row"><span>VAT 7%</span><span>฿' + vatAmt.toFixed(0) + '</span></div>';
-      }
+      if (vatRate > 0) html += '<div class="receipt-row"><span>VAT 7%</span><span>฿' + vatAmt.toFixed(0) + '</span></div>';
       html += '<div class="receipt-row receipt-total"><span>ยอดรวม</span><span>฿' + total.toFixed(0) + '</span></div>';
       html += '</div>';
     }
 
-    // ── QR image ─────────────────────────────────────────────────────────────
-    if (s.acceptQrCode && s.qrCodeImageBase64) {
-      html += '<div class="pay-qr"><img src="/api/settings/qr?merchantId=merchant-001" alt="QR Code"/></div>';
-    }
-
-    // ── Payment methods ───────────────────────────────────────────────────────
+    // ── Payment method selector ───────────────────────────────────────────────
     var methods = [];
-    if (s.acceptQrCode) methods.push('<div class="pay-method"><span>📱</span><span>QR Code</span></div>');
-    if (s.acceptCash) methods.push('<div class="pay-method"><span>💵</span><span>เงินสด</span></div>');
-    if (s.acceptBankTransfer) methods.push('<div class="pay-method"><span>🏦</span><span>โอนธนาคาร</span></div>');
-    if (s.acceptPromptPay) methods.push('<div class="pay-method"><span>⚡</span><span>พร้อมเพย์</span></div>');
+    if (s.acceptQrCode) methods.push({id:'qr', icon:'📱', label:'QR Code'});
+    if (s.acceptCash) methods.push({id:'cash', icon:'💵', label:'เงินสด'});
+    if (s.acceptBankTransfer) methods.push({id:'bank', icon:'🏦', label:'โอนธนาคาร'});
+    if (s.acceptPromptPay) methods.push({id:'promptpay', icon:'⚡', label:'พร้อมเพย์'});
 
     if (methods.length > 0) {
-      html += '<div class="pay-section-title">วิธีชำระเงิน</div>';
-      html += '<div class="pay-methods">' + methods.join('') + '</div>';
-    }
-
-    // ── Bank info ─────────────────────────────────────────────────────────────
-    var info = [];
-    if (s.bankName) info.push(['ธนาคาร', s.bankName]);
-    if (s.bankAccount) info.push(['เลขบัญชี', s.bankAccount]);
-    if (s.promptPayNumber) info.push(['พร้อมเพย์', s.promptPayNumber]);
-    if (s.accountName) info.push(['ชื่อบัญชี', s.accountName]);
-
-    if (info.length > 0) {
-      html += '<div class="pay-info-card">';
-      info.forEach(function(row) {
-        html += '<div class="pay-info-row"><span class="pay-info-label">' + row[0] + '</span><span class="pay-info-value">' + row[1] + '</span></div>';
+      html += '<div class="pay-section-title">เลือกวิธีชำระเงิน</div>';
+      html += '<div class="pay-methods" id="pay-methods">';
+      methods.forEach(function(m) {
+        html += '<div class="pay-method" id="pm-' + m.id + '" onclick="selectPayMethod(\'' + m.id + '\')">'
+          + '<span>' + m.icon + '</span><span>' + m.label + '</span></div>';
       });
       html += '</div>';
     }
 
-    if (html === '') {
-      html = '<div class="empty-state">ยังไม่ได้ตั้งค่าการชำระเงิน</div>';
+    // ── QR zone (hidden until selected) ──────────────────────────────────────
+    if (s.acceptQrCode && s.qrCodeImageBase64) {
+      html += '<div id="zone-qr" class="pay-zone" style="display:none">'
+        + '<div class="pay-qr"><div class="pay-qr-loading" id="qr-loading">กำลังโหลด QR...</div>'
+        + '<img id="qr-img" src="/api/settings/qr?merchantId=merchant-001" alt="QR Code" style="display:none" onload="document.getElementById(\'qr-loading\').style.display=\'none\';this.style.display=\'block\'"/>'
+        + '</div>'
+        + '<div class="pay-info-card">';
+      var info = [];
+      if (s.bankName) info.push(['ธนาคาร', s.bankName]);
+      if (s.bankAccount) info.push(['เลขบัญชี', s.bankAccount]);
+      if (s.promptPayNumber) info.push(['พร้อมเพย์', s.promptPayNumber]);
+      if (s.accountName) info.push(['ชื่อบัญชี', s.accountName]);
+      info.forEach(function(r) { html += '<div class="pay-info-row"><span class="pay-info-label">' + r[0] + '</span><span class="pay-info-value">' + r[1] + '</span></div>'; });
+      html += '</div>'
+        + _slipUploadHtml(orderId)
+        + '</div>';
+    }
+
+    // ── Bank/PromptPay zone ───────────────────────────────────────────────────
+    if (s.acceptBankTransfer || s.acceptPromptPay) {
+      html += '<div id="zone-bank" class="pay-zone" style="display:none"><div class="pay-info-card">';
+      var binfo = [];
+      if (s.bankName) binfo.push(['ธนาคาร', s.bankName]);
+      if (s.bankAccount) binfo.push(['เลขบัญชี', s.bankAccount]);
+      if (s.promptPayNumber) binfo.push(['พร้อมเพย์', s.promptPayNumber]);
+      if (s.accountName) binfo.push(['ชื่อบัญชี', s.accountName]);
+      binfo.forEach(function(r) { html += '<div class="pay-info-row"><span class="pay-info-label">' + r[0] + '</span><span class="pay-info-value">' + r[1] + '</span></div>'; });
+      html += '</div>' + _slipUploadHtml(orderId) + '</div>';
+    }
+
+    // ── Cash zone ─────────────────────────────────────────────────────────────
+    if (s.acceptCash) {
+      html += '<div id="zone-cash" class="pay-zone" style="display:none">'
+        + '<div class="pay-cash-msg">💵 ชำระเงินสดที่เคาน์เตอร์<br/><small>กรุณาแจ้งพนักงาน</small></div>'
+        + '<button class="pay-done-btn" onclick="cashDone()">✅ แจ้งชำระเงินแล้ว</button>'
+        + '</div>';
     }
 
     document.getElementById('payment-content').innerHTML = html;
   } catch(e) {
     document.getElementById('payment-content').innerHTML = '<div class="empty-state">เกิดข้อผิดพลาด</div>';
   }
+}
+
+function _slipUploadHtml(orderId) {
+  if (!orderId) return '';
+  return '<div class="slip-section">'
+    + '<div class="pay-section-title">แนบสลิปการโอน</div>'
+    + '<label class="slip-label" for="slip-input">📎 เลือกรูปสลิป</label>'
+    + '<input type="file" id="slip-input" accept="image/*" style="display:none" onchange="uploadSlip(\'' + orderId + '\',this)"/>'
+    + '<div id="slip-preview"></div>'
+    + '<div id="slip-status"></div>'
+    + '</div>';
+}
+
+function selectPayMethod(id) {
+  document.querySelectorAll('.pay-method').forEach(function(el) { el.classList.remove('active'); });
+  var el = document.getElementById('pm-' + id);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.pay-zone').forEach(function(z) { z.style.display = 'none'; });
+  var zoneMap = {qr:'zone-qr', cash:'zone-cash', bank:'zone-bank', promptpay:'zone-bank'};
+  var zone = document.getElementById(zoneMap[id]);
+  if (zone) zone.style.display = 'block';
+}
+
+async function uploadSlip(orderId, input) {
+  var file = input.files[0];
+  if (!file) return;
+  var preview = document.getElementById('slip-preview');
+  var status = document.getElementById('slip-status');
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    preview.innerHTML = '<img src="' + e.target.result + '" style="width:100%;border-radius:10px;margin-top:8px"/>';
+  };
+  reader.readAsDataURL(file);
+  status.innerHTML = '<div class="slip-uploading">กำลังส่ง...</div>';
+  try {
+    var form = new FormData();
+    form.append('slip', file);
+    var res = await fetch('/api/orders/' + orderId + '/slip', {method:'POST', body:form});
+    var data = await res.json();
+    if (data.success) {
+      status.innerHTML = '<div class="slip-success">✅ ส่งสลิปแล้ว ขอบคุณ!</div>';
+      setTimeout(function() { if (typeof liff !== 'undefined') liff.closeWindow(); }, 2000);
+    } else {
+      status.innerHTML = '<div class="slip-error">เกิดข้อผิดพลาด กรุณาลองใหม่</div>';
+    }
+  } catch(e) {
+    status.innerHTML = '<div class="slip-error">เกิดข้อผิดพลาด กรุณาลองใหม่</div>';
+  }
+}
+
+async function cashDone() {
+  var btn = document.querySelector('.pay-done-btn');
+  if (btn) btn.disabled = true;
+  showToast('แจ้งร้านแล้ว กรุณารอสักครู่');
+  setTimeout(function() { if (typeof liff !== 'undefined') liff.closeWindow(); }, 1800);
 }
 
 var PAGE_CSS = `
@@ -572,6 +638,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .receipt-divider{border:none;border-top:1px dashed #ddd;margin:10px 0}
 .receipt-row{display:flex;justify-content:space-between;font-size:14px;padding:4px 0;color:#555}
 .receipt-total{font-size:16px;font-weight:700;color:#FF6B00;padding-top:8px}
+.pay-method{flex:1;background:#fff;border-radius:12px;padding:12px 4px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:4px;font-size:11px;color:#555;cursor:pointer;transition:all .15s;border:2px solid transparent}
+.pay-method.active{border-color:#FF6B00;background:#FFF3E0}
+.pay-zone{margin-top:12px}
+.pay-qr-loading{text-align:center;padding:40px;color:#999;font-size:14px}
+.pay-cash-msg{background:#fff;border-radius:14px;padding:24px;text-align:center;font-size:16px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.06);line-height:2}
+.pay-done-btn{width:100%;margin-top:12px;padding:16px;background:#4CAF50;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer}
+.pay-done-btn:disabled{opacity:.5}
+.slip-section{margin-top:12px}
+.slip-label{display:block;width:100%;padding:14px;background:#FF6B00;color:#fff;border-radius:14px;text-align:center;font-size:15px;font-weight:700;cursor:pointer}
+.slip-uploading{text-align:center;padding:10px;color:#999}
+.slip-success{text-align:center;padding:10px;color:#4CAF50;font-weight:700}
+.slip-error{text-align:center;padding:10px;color:#F44336}
 `;
 
 async function initLiff() {
