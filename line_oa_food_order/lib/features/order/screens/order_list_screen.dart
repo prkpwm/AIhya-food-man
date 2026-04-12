@@ -92,6 +92,11 @@ class _OrderCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final dt = order.createdAt.toLocal();
+    final dateStr = '${dt.day.toString().padLeft(2,'0')}/${dt.month.toString().padLeft(2,'0')} '
+        '${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}';
+    final canReject = order.status == OrderStatus.pending || order.status == OrderStatus.confirmed;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -116,7 +121,8 @@ class _OrderCard extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(order.customerName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    Text('#${order.id.split('-').last}', style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                    Text('#${order.id.split('-').last}  ·  $dateStr',
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
                   ]),
                 ]),
                 Container(
@@ -156,27 +162,92 @@ class _OrderCard extends ConsumerWidget {
                   Text('฿${order.totalPrice.toStringAsFixed(0)}',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ]),
-                if (order.status != OrderStatus.completed && order.status != OrderStatus.cancelled)
-                  GestureDetector(
-                    onTap: () async {
-                      final next = _nextStatus(order.status);
-                      if (next == null) return;
-                      await ref.read(orderListProvider.notifier).updateStatus(order.id, next);
-                      _pushStatusFlex(order, next);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(50)),
-                      child: Text(_nextLabel(order.status),
-                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                Row(children: [
+                  if (canReject) ...[
+                    GestureDetector(
+                      onTap: () => _confirmReject(context, ref),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF44336).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(color: const Color(0xFFF44336).withOpacity(0.3)),
+                        ),
+                        child: const Text('ปฏิเสธ',
+                            style: TextStyle(color: Color(0xFFF44336), fontSize: 13, fontWeight: FontWeight.w600)),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (order.status != OrderStatus.completed && order.status != OrderStatus.cancelled)
+                    GestureDetector(
+                      onTap: () async {
+                        final next = _nextStatus(order.status);
+                        if (next == null) return;
+                        await ref.read(orderListProvider.notifier).updateStatus(order.id, next);
+                        _pushStatusFlex(order, next);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(50)),
+                        child: Text(_nextLabel(order.status),
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                ]),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmReject(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('ปฏิเสธออเดอร์?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('ยืนยันการปฏิเสธออเดอร์ของ ${order.customerName}'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ยกเลิก')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('ปฏิเสธ', style: TextStyle(color: Color(0xFFF44336), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(orderListProvider.notifier).updateStatus(order.id, OrderStatus.cancelled);
+    _pushRejectFlex(order);
+  }
+
+  void _pushRejectFlex(OrderModel order) {
+    final shortId = order.id.split('-').last;
+    final flex = {
+      'type': 'flex',
+      'altText': '❌ ออเดอร์ถูกปฏิเสธ #$shortId',
+      'contents': {
+        'type': 'bubble',
+        'header': {
+          'type': 'box', 'layout': 'vertical', 'backgroundColor': '#F44336', 'paddingAll': '16px',
+          'contents': [
+            {'type': 'text', 'text': '❌ ออเดอร์ถูกปฏิเสธ', 'weight': 'bold', 'size': 'lg', 'color': '#ffffff'},
+            {'type': 'text', 'text': '#$shortId', 'size': 'sm', 'color': '#FFFFFF'},
+          ],
+        },
+        'body': {
+          'type': 'box', 'layout': 'vertical', 'spacing': 'md',
+          'contents': [
+            {'type': 'text', 'text': 'ขออภัย ทางร้านไม่สามารถรับออเดอร์นี้ได้', 'size': 'sm', 'color': '#555555', 'wrap': true},
+            {'type': 'text', 'text': 'กรุณาสั่งใหม่อีกครั้ง', 'size': 'sm', 'color': '#999999'},
+          ],
+        },
+      },
+    };
+    ApiService().pushFlex(order.customerId, jsonEncode(flex));
   }
 
   OrderStatus? _nextStatus(OrderStatus s) {
