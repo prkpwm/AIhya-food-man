@@ -517,8 +517,6 @@ async function loadPaymentInfo(orderId) {
       var binfo = [];
       if (s.bankName) binfo.push(['ธนาคาร', s.bankName]);
       if (s.bankAccount) binfo.push(['เลขบัญชี', s.bankAccount]);
-      if (s.promptPayNumber) binfo.push(['พร้อมเพย์', s.promptPayNumber]);
-      if (s.accountName) binfo.push(['ชื่อบัญชี', s.accountName]);
       binfo.forEach(function(r) { html += '<div class="pay-info-row"><span class="pay-info-label">' + r[0] + '</span><span class="pay-info-value">' + r[1] + '</span></div>'; });
       html += '</div>' + _slipUploadHtml(orderId) + '</div>';
     }
