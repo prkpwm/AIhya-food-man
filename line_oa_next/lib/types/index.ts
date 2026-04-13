@@ -73,3 +73,22 @@ export interface ErrorResponse {
   en: string;
   th: string;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  merchantId: string | null;
+}
+
+export interface Merchant {
+  id: string;
+  ownerId: string;
+  name: string;
+}
+
+export interface JwtPayload {
+  userId: string;
+  email: string;
+  merchantId: string | null;
+}

@@ -4,6 +4,8 @@ export default function Home() {
       <body style={{ fontFamily: 'sans-serif', padding: 40 }}>
         <h1>LINE OA Food Order API</h1>
         <ul style={{ marginTop: 16, lineHeight: 2 }}>
+          <li><a href="/login">🔐 Login / Register</a></li>
+          <li><a href="/dashboard">📊 Dashboard</a></li>
           <li><a href="/api/health">GET /api/health</a></li>
           <li><a href="/api/logs">GET /api/logs</a></li>
           <li><a href="/api/menus?merchantId=merchant-001">GET /api/menus</a></li>

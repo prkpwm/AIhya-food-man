@@ -1,5 +1,27 @@
 import { Schema, model, models } from 'mongoose';
 
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+const UserSchema = new Schema({
+  _id: { type: String, required: true }, // userId = uuid
+  email: { type: String, required: true, unique: true, lowercase: true },
+  passwordHash: { type: String, required: true },
+  name: { type: String, required: true },
+  merchantId: { type: String, default: null }, // linked merchant
+}, { timestamps: true });
+
+export const UserModel = models.User ?? model('User', UserSchema);
+
+// ─── Merchant ─────────────────────────────────────────────────────────────────
+
+const MerchantSchema = new Schema({
+  _id: { type: String, required: true }, // merchantId = uuid
+  ownerId: { type: String, required: true, index: true }, // userId
+  name: { type: String, required: true },
+}, { timestamps: true });
+
+export const MerchantModel = models.Merchant ?? model('Merchant', MerchantSchema);
+
 // ─── Order ────────────────────────────────────────────────────────────────────
 
 const OrderItemSchema = new Schema({
