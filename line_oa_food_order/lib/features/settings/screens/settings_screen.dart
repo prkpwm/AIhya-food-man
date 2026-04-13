@@ -204,8 +204,17 @@ class _ChangePasswordPage extends StatefulWidget {
 class _ChangePasswordPageState extends State<_ChangePasswordPage> {
   final _curCtrl = TextEditingController();
   final _newCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
   String? _token;
   bool _saving = false;
+  bool _showCur = false;
+  bool _showNew = false;
+  bool _showConfirm = false;
+
+  // validation state
+  String? _curError;
+  String? _newError;
+  String? _confirmError;
 
   @override
   void initState() {
@@ -214,21 +223,34 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
   }
 
   @override
-  void dispose() { _curCtrl.dispose(); _newCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _curCtrl.dispose(); _newCtrl.dispose(); _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  bool _validate() {
+    String? curErr, newErr, confirmErr;
+    if (_curCtrl.text.isEmpty) curErr = 'กรุณากรอกรหัสผ่านปัจจุบัน';
+    if (_newCtrl.text.length < 6) newErr = 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร';
+    if (_confirmCtrl.text != _newCtrl.text) confirmErr = 'รหัสผ่านไม่ตรงกัน';
+    setState(() { _curError = curErr; _newError = newErr; _confirmError = confirmErr; });
+    return curErr == null && newErr == null && confirmErr == null;
+  }
 
   Future<void> _save() async {
-    if (_token == null) return;
-    if (_curCtrl.text.isEmpty || _newCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('กรุณากรอกรหัสผ่านให้ครบ'), behavior: SnackBarBehavior.floating));
-      return;
-    }
+    if (!_validate() || _token == null) return;
     setState(() => _saving = true);
     try {
       await ApiService().changePassword(_token!, _curCtrl.text.trim(), _newCtrl.text.trim());
-      _curCtrl.clear(); _newCtrl.clear();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('เปลี่ยนรหัสผ่านแล้ว'), behavior: SnackBarBehavior.floating));
+      _curCtrl.clear(); _newCtrl.clear(); _confirmCtrl.clear();
+      setState(() { _curError = null; _newError = null; _confirmError = null; });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ เปลี่ยนรหัสผ่านสำเร็จ'), behavior: SnackBarBehavior.floating, backgroundColor: Color(0xFF34A853)),
+        );
+      }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('รหัสผ่านปัจจุบันไม่ถูกต้อง'), behavior: SnackBarBehavior.floating));
+      setState(() => _curError = 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -237,14 +259,114 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
   @override
   Widget build(BuildContext context) => _SubPage(
     title: 'เปลี่ยนรหัสผ่าน',
-    child: Column(children: [
-      _Field(ctrl: _curCtrl, label: 'รหัสผ่านปัจจุบัน', obscure: true),
-      const SizedBox(height: 14),
-      _Field(ctrl: _newCtrl, label: 'รหัสผ่านใหม่', obscure: true),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // info banner
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: const Color(0xFFE8F0FE), borderRadius: BorderRadius.circular(12)),
+        child: const Row(children: [
+          Icon(Icons.info_outline, color: Color(0xFF1A73E8), size: 18),
+          SizedBox(width: 10),
+          Expanded(child: Text('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร', style: TextStyle(fontSize: 13, color: Color(0xFF1A73E8)))),
+        ]),
+      ),
+      const SizedBox(height: 24),
+
+      // current password
+      const _Label('รหัสผ่านปัจจุบัน'),
+      const SizedBox(height: 6),
+      _PasswordField(
+        ctrl: _curCtrl,
+        hint: 'กรอกรหัสผ่านปัจจุบัน',
+        show: _showCur,
+        onToggle: () => setState(() => _showCur = !_showCur),
+        error: _curError,
+        onChanged: (_) => setState(() => _curError = null),
+      ),
       const SizedBox(height: 20),
+
+      // new password
+      const _Label('รหัสผ่านใหม่'),
+      const SizedBox(height: 6),
+      _PasswordField(
+        ctrl: _newCtrl,
+        hint: 'กรอกรหัสผ่านใหม่',
+        show: _showNew,
+        onToggle: () => setState(() => _showNew = !_showNew),
+        error: _newError,
+        onChanged: (_) => setState(() => _newError = null),
+      ),
+      const SizedBox(height: 20),
+
+      // confirm password
+      const _Label('ยืนยันรหัสผ่านใหม่'),
+      const SizedBox(height: 6),
+      _PasswordField(
+        ctrl: _confirmCtrl,
+        hint: 'กรอกรหัสผ่านอีกครั้ง',
+        show: _showConfirm,
+        onToggle: () => setState(() => _showConfirm = !_showConfirm),
+        error: _confirmError,
+        onChanged: (_) => setState(() => _confirmError = null),
+      ),
+      const SizedBox(height: 28),
+
       _SaveBtn(onPressed: _save, saving: _saving, label: 'เปลี่ยนรหัสผ่าน'),
     ]),
   );
+}
+
+// ─── Password field with show/hide toggle ─────────────────────────────────────
+
+class _PasswordField extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String hint;
+  final bool show;
+  final VoidCallback onToggle;
+  final String? error;
+  final ValueChanged<String>? onChanged;
+  const _PasswordField({required this.ctrl, required this.hint, required this.show, required this.onToggle, this.error, this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      TextField(
+        controller: ctrl,
+        obscureText: !show,
+        onChanged: onChanged,
+        style: const TextStyle(fontSize: 15),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Color(0xFFBDBDBD)),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE8EAED))),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: error != null ? Colors.red.shade300 : const Color(0xFFE8EAED))),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: error != null ? Colors.red : const Color(0xFF1A73E8), width: 1.5)),
+          suffixIcon: IconButton(
+            icon: Icon(show ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: const Color(0xFF9E9E9E), size: 20),
+            onPressed: onToggle,
+          ),
+        ),
+      ),
+      if (error != null) ...[
+        const SizedBox(height: 6),
+        Row(children: [
+          const Icon(Icons.error_outline, size: 14, color: Colors.red),
+          const SizedBox(width: 4),
+          Text(error!, style: const TextStyle(fontSize: 12, color: Colors.red)),
+        ]),
+      ],
+    ]);
+  }
+}
+
+class _Label extends StatelessWidget {
+  final String text;
+  const _Label(this.text);
+  @override
+  Widget build(BuildContext context) => Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF5f6368)));
 }
 
 // ─── Shop info page ───────────────────────────────────────────────────────────
