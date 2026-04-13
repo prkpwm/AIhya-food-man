@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:line_oa_food_order/core/services/api_service.dart';
+import 'package:line_oa_food_order/core/services/auth_storage.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -17,6 +18,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _bankAccountCtrl = TextEditingController();
   final _accountNameCtrl = TextEditingController();
   final _promptPayCtrl = TextEditingController();
+
+  // profile
+  final _nameCtrl = TextEditingController();
+  final _currentPassCtrl = TextEditingController();
+  final _newPassCtrl = TextEditingController();
+  String? _authToken;
+  String? _userEmail;
 
   bool _acceptCash = true;
   bool _acceptBankTransfer = false;
@@ -35,6 +43,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+    _loadProfile();
   }
 
   @override
@@ -44,7 +53,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _bankAccountCtrl.dispose();
     _accountNameCtrl.dispose();
     _promptPayCtrl.dispose();
+    _nameCtrl.dispose();
+    _currentPassCtrl.dispose();
+    _newPassCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    final data = await AuthStorage.getAll();
+    setState(() {
+      _authToken = data['token'];
+      _userEmail = data['email'];
+      _nameCtrl.text = data['name'] ?? '';
+    });
+  }
+
+  Future<void> _saveProfile() async {
+    if (_authToken == null) return;
+    try {
+      await ApiService().updateProfile(_authToken!, _nameCtrl.text.trim());
+      await AuthStorage.save(
+        token: _authToken!,
+        name: _nameCtrl.text.trim(),
+        email: _userEmail ?? '',
+        merchantId: (await AuthStorage.getAll())['merchantId'] ?? '',
+      );
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('อัปเดตชื่อแล้ว'), behavior: SnackBarBehavior.floating));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e'), behavior: SnackBarBehavior.floating));
+    }
+  }
+
+  Future<void> _changePassword() async {
+    if (_authToken == null) return;
+    final cur = _currentPassCtrl.text.trim();
+    final nw = _newPassCtrl.text.trim();
+    if (cur.isEmpty || nw.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('กรุณากรอกรหัสผ่านให้ครบ'), behavior: SnackBarBehavior.floating));
+      return;
+    }
+    try {
+      await ApiService().changePassword(_authToken!, cur, nw);
+      _currentPassCtrl.clear();
+      _newPassCtrl.clear();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('เปลี่ยนรหัสผ่านแล้ว'), behavior: SnackBarBehavior.floating));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('รหัสผ่านปัจจุบันไม่ถูกต้อง'), behavior: SnackBarBehavior.floating));
+    }
+  }
+
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('ออกจากระบบ'),
+        content: const Text('ต้องการออกจากระบบใช่ไหม?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('ยกเลิก')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('ออกจากระบบ', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    await AuthStorage.clear();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ออกจากระบบแล้ว'), behavior: SnackBarBehavior.floating));
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -139,6 +213,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Profile ──────────────────────────────────────────────
+                    _Section(title: '👤 โปรไฟล์', children: [
+                      if (_userEmail != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Text(_userEmail!, style: const TextStyle(fontSize: 13, color: Color(0xFF5f6368))),
+                        ),
+                      _Field(ctrl: _nameCtrl, label: 'ชื่อของคุณ'),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _saveProfile,
+                          style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                          child: const Text('บันทึกชื่อ'),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 16),
+                    _Section(title: '🔒 เปลี่ยนรหัสผ่าน', children: [
+                      _Field(ctrl: _currentPassCtrl, label: 'รหัสผ่านปัจจุบัน', obscure: true),
+                      const SizedBox(height: 10),
+                      _Field(ctrl: _newPassCtrl, label: 'รหัสผ่านใหม่', obscure: true),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _changePassword,
+                          style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                          child: const Text('เปลี่ยนรหัสผ่าน'),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(Icons.logout, color: Colors.red),
+                        label: const Text('ออกจากระบบ', style: TextStyle(color: Colors.red)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // ── Shop settings ─────────────────────────────────────────
                     _Section(title: 'ข้อมูลร้าน', children: [
                       _Field(ctrl: _shopNameCtrl, label: 'ชื่อร้าน'),
                     ]),
@@ -260,12 +383,14 @@ class _Toggle extends StatelessWidget {
 class _Field extends StatelessWidget {
   final TextEditingController ctrl;
   final String label;
-  const _Field({required this.ctrl, required this.label});
+  final bool obscure;
+  const _Field({required this.ctrl, required this.label, this.obscure = false});
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: ctrl,
+      obscureText: obscure,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

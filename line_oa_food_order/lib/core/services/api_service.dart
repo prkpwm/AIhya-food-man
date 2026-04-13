@@ -203,4 +203,33 @@ class ApiService {
   Future<void> deleteRichMenu(String richMenuId) async {
     await _dio.delete('/rich-menu/$richMenuId');
   }
+
+  // ─── Auth ────────────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final res = await _nextDio.post('/auth/login', data: {'email': email, 'password': password});
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> register(String email, String password, String name, String shopName) async {
+    final res = await _nextDio.post('/auth/register', data: {'email': email, 'password': password, 'name': name, 'shopName': shopName});
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<void> logout() async {
+    await _nextDio.post('/auth/logout');
+  }
+
+  Future<Map<String, dynamic>> getMe(String token) async {
+    final res = await _nextDio.get('/auth/me', options: Options(headers: {'Authorization': 'Bearer $token'}));
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<void> updateProfile(String token, String name) async {
+    await _nextDio.patch('/auth/profile', data: {'name': name}, options: Options(headers: {'Authorization': 'Bearer $token'}));
+  }
+
+  Future<void> changePassword(String token, String currentPassword, String newPassword) async {
+    await _nextDio.put('/auth/profile', data: {'currentPassword': currentPassword, 'newPassword': newPassword}, options: Options(headers: {'Authorization': 'Bearer $token'}));
+  }
 }
