@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:line_oa_food_order/features/auth/providers/auth_provider.dart';
-import 'package:line_oa_food_order/features/auth/widgets/auth_widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -17,10 +16,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _showPass = false;
   String? _emailErr;
   String? _passErr;
-
-  static const _teal = Color(0xFF7ECEC4);
-  static const _dark = Color(0xFF1A1A1A);
-  static const _bg = Color(0xFFF2F2F2);
 
   @override
   void dispose() {
@@ -39,7 +34,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _login() async {
     if (!_validate()) return;
-    await ref.read(authProvider.notifier).login(_emailCtrl.text.trim(), _passCtrl.text.trim());
+    await ref.read(authProvider.notifier).login(
+      _emailCtrl.text.trim(), _passCtrl.text.trim(),
+    );
     final s = ref.read(authProvider);
     if (s.hasValue && s.value != null && mounted) context.go('/menu');
   }
@@ -49,110 +46,127 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: _dark,
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Top dark section with logo ────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(28, 52, 28, 40),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  // logo badge
-                  Container(
-                    width: 60, height: 60,
-                    decoration: BoxDecoration(color: _teal, borderRadius: BorderRadius.circular(18)),
-                    child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 30),
-                  ),
-                  const SizedBox(height: 28),
-                  const Text('ยินดีต้อนรับ', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, height: 1.1)),
-                  const SizedBox(height: 8),
-                  Text('เข้าสู่ระบบสำหรับผู้ประกอบการ', style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 14)),
-                ]),
-              ),
+              const SizedBox(height: 40),
 
-              // ── White card ────────────────────────────────────────────────
+              // logo
               Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: _bg,
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+                width: 60, height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7ECEC4),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('เข้าสู่ระบบ', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _dark)),
-                  const SizedBox(height: 24),
+                child: const Icon(Icons.restaurant, color: Colors.white, size: 32),
+              ),
+              const SizedBox(height: 24),
+              const Text('ยินดีต้อนรับ',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              const Text('เข้าสู่ระบบสำหรับผู้ประกอบการ',
+                  style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 15)),
+              const SizedBox(height: 40),
 
-                  // email
-                  _ThemedField(
-                    ctrl: _emailCtrl,
-                    label: 'อีเมล',
-                    icon: Icons.email_outlined,
+              // form card
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 20)],
+                ),
+                padding: const EdgeInsets.all(24),
+                child: Column(children: [
+
+                  // email field
+                  TextField(
+                    controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
-                    error: _emailErr,
                     onChanged: (_) => setState(() => _emailErr = null),
+                    decoration: InputDecoration(
+                      labelText: 'อีเมล',
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      errorText: _emailErr,
+                    ),
                   ),
                   const SizedBox(height: 16),
 
-                  // password
-                  _ThemedField(
-                    ctrl: _passCtrl,
-                    label: 'รหัสผ่าน',
-                    icon: Icons.lock_outline,
-                    obscure: !_showPass,
-                    error: _passErr,
+                  // password field with show/hide
+                  TextField(
+                    controller: _passCtrl,
+                    obscureText: !_showPass,
                     onChanged: (_) => setState(() => _passErr = null),
-                    suffix: IconButton(
-                      icon: Icon(_showPass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20, color: const Color(0xFF9E9E9E)),
-                      onPressed: () => setState(() => _showPass = !_showPass),
+                    decoration: InputDecoration(
+                      labelText: 'รหัสผ่าน',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      errorText: _passErr,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _showPass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          size: 20,
+                          color: const Color(0xFF9E9E9E),
+                        ),
+                        onPressed: () => setState(() => _showPass = !_showPass),
+                      ),
                     ),
                   ),
 
-                  // api error
+                  // api error banner
                   if (authState.hasError) ...[
                     const SizedBox(height: 14),
                     Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.red.shade200)),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF0F0),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFFCDD2)),
+                      ),
                       child: Row(children: [
-                        Icon(Icons.error_outline, color: Colors.red.shade400, size: 16),
+                        const Icon(Icons.error_outline, color: Color(0xFFE53935), size: 16),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(authState.error.toString().replaceAll('Exception: ', ''), style: TextStyle(color: Colors.red.shade700, fontSize: 13))),
+                        Expanded(
+                          child: Text(
+                            authState.error.toString().replaceAll('Exception: ', ''),
+                            style: const TextStyle(color: Color(0xFFE53935), fontSize: 13),
+                          ),
+                        ),
                       ]),
                     ),
                   ],
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   // login button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: authState.isLoading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _dark,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        elevation: 0,
-                      ),
                       child: authState.isLoading
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text('เข้าสู่ระบบ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          ? const SizedBox(height: 20, width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('เข้าสู่ระบบ'),
                     ),
                   ),
+                ]),
+              ),
 
-                  const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-                  // register link
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Text('ยังไม่มีบัญชี?', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 14)),
-                    TextButton(
-                      onPressed: () => context.go('/register'),
-                      style: TextButton.styleFrom(foregroundColor: _teal),
-                      child: const Text('สมัครสมาชิก', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                    ),
-                  ]),
+              // register link
+              Center(
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Text('ยังไม่มีบัญชี?',
+                      style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 14)),
+                  TextButton(
+                    onPressed: () => context.go('/register'),
+                    child: const Text('สมัครสมาชิก',
+                        style: TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.w600)),
+                  ),
                 ]),
               ),
             ],
@@ -160,54 +174,5 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
       ),
     );
-  }
-}
-
-// ─── Themed field matching app style ─────────────────────────────────────────
-
-class _ThemedField extends StatelessWidget {
-  final TextEditingController ctrl;
-  final String label;
-  final IconData icon;
-  final bool obscure;
-  final String? error;
-  final TextInputType? keyboardType;
-  final ValueChanged<String>? onChanged;
-  final Widget? suffix;
-  const _ThemedField({required this.ctrl, required this.label, required this.icon, this.obscure = false, this.error, this.keyboardType, this.onChanged, this.suffix});
-
-  @override
-  Widget build(BuildContext context) {
-    final hasErr = error != null;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      TextField(
-        controller: ctrl,
-        obscureText: obscure,
-        keyboardType: keyboardType,
-        onChanged: onChanged,
-        style: const TextStyle(fontSize: 15, color: Color(0xFF1A1A1A)),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Color(0xFF9E9E9E)),
-          prefixIcon: Icon(icon, size: 20, color: const Color(0xFF9E9E9E)),
-          suffixIcon: suffix,
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: hasErr ? Colors.red.shade300 : Colors.transparent)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: hasErr ? Colors.red : const Color(0xFF7ECEC4), width: 1.5)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-      ),
-      if (hasErr) ...[
-        const SizedBox(height: 5),
-        Row(children: [
-          const SizedBox(width: 4),
-          const Icon(Icons.error_outline, size: 13, color: Colors.red),
-          const SizedBox(width: 4),
-          Text(error!, style: const TextStyle(fontSize: 12, color: Colors.red)),
-        ]),
-      ],
-    ]);
   }
 }
