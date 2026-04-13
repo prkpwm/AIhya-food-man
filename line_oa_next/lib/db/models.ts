@@ -18,6 +18,8 @@ const MerchantSchema = new Schema({
   _id: { type: String, required: true }, // merchantId = uuid
   ownerId: { type: String, required: true, index: true }, // userId
   name: { type: String, required: true },
+  plan: { type: String, default: 'free', enum: ['free', 'silver', 'gold', 'platinum'] },
+  planExpiresAt: { type: Date, default: null },
 }, { timestamps: true });
 
 export const MerchantModel = models.Merchant ?? model('Merchant', MerchantSchema);

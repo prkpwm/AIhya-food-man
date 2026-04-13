@@ -92,3 +92,11 @@ export interface JwtPayload {
   email: string;
   merchantId: string | null;
 }
+
+export type PlanTier = 'free' | 'silver' | 'gold' | 'platinum';
+
+export const PLAN_FLEX_ENABLED: PlanTier[] = ['gold', 'platinum'];
+
+export function canSendFlex(plan: PlanTier): boolean {
+  return PLAN_FLEX_ENABLED.includes(plan);
+}

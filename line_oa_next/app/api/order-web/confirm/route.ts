@@ -4,7 +4,9 @@ import * as orderService from '@/lib/services/order.service';
 import * as lineService from '@/lib/services/line.service';
 import { emitNewOrder } from '@/lib/services/order_events';
 import { env } from '@/lib/config/env';
-import { Order, OrderItem } from '@/lib/types';
+import { Order, OrderItem, canSendFlex, PlanTier } from '@/lib/types';
+import { connectDB } from '@/lib/db/mongoose';
+import { MerchantModel } from '@/lib/db/models';
 
 ensureInit();
 
@@ -76,9 +78,16 @@ export async function POST(req: NextRequest) {
     // notify SSE listeners (merchant app)
     emitNewOrder(order.id, order.customerName, order.totalPrice);
 
-    // push flex to user — fire and forget (don't fail the order if LINE push fails)
+    // push flex only if merchant plan is gold or above
     if (env.line.channelAccessToken) {
-      lineService.pushFlex(env.line.channelAccessToken, userId, flex).catch(() => {});
+      await connectDB();
+      const merchant = await MerchantModel.findById(merchantId ?? 'merchant-001').select('plan planExpiresAt');
+      const plan = (merchant?.plan ?? 'free') as PlanTier;
+      const expired = merchant?.planExpiresAt && new Date(merchant.planExpiresAt) < new Date();
+      const flexAllowed = canSendFlex(plan) && !expired;
+      if (flexAllowed) {
+        lineService.pushFlex(env.line.channelAccessToken, userId, flex).catch(() => {});
+      }
     }
 
     return NextResponse.json({

@@ -232,4 +232,15 @@ class ApiService {
   Future<void> changePassword(String token, String currentPassword, String newPassword) async {
     await _nextDio.put('/auth/profile', data: {'currentPassword': currentPassword, 'newPassword': newPassword}, options: Options(headers: {'Authorization': 'Bearer $token'}));
   }
+
+  // ─── Plan ────────────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getMerchantPlan(String token) async {
+    final res = await _nextDio.get('/merchant/plan', options: Options(headers: {'Authorization': 'Bearer $token'}));
+    return res.data as Map<String, dynamic>;
+  }
+
+  Future<void> updateMerchantPlan(String token, String plan) async {
+    await _nextDio.patch('/merchant/plan', data: {'plan': plan}, options: Options(headers: {'Authorization': 'Bearer $token'}));
+  }
 }

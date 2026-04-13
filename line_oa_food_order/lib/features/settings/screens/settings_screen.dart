@@ -17,6 +17,7 @@ class SettingsScreen extends ConsumerWidget {
       _MenuItem(icon: Icons.lock_outline, label: 'เปลี่ยนรหัสผ่าน', sub: 'อัปเดตรหัสผ่านของคุณ', page: const _ChangePasswordPage()),
       _MenuItem(icon: Icons.store_outlined, label: 'ข้อมูลร้าน', sub: 'ชื่อร้าน, ภาษี', page: const _ShopInfoPage()),
       _MenuItem(icon: Icons.payment_outlined, label: 'วิธีชำระเงิน', sub: 'เงินสด, โอน, QR', page: const _PaymentPage()),
+      _MenuItem(icon: Icons.workspace_premium_outlined, label: 'แพ็กเกจ', sub: 'Free / Silver / Gold / Platinum', page: const _PlanPage()),
       _MenuItem(icon: Icons.logout, label: 'ออกจากระบบ', sub: '', page: null, danger: true),
     ];
 
@@ -813,4 +814,205 @@ class _SaveBtn extends StatelessWidget {
           : Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     ),
   );
+}
+
+// ─── Plan page ────────────────────────────────────────────────────────────────
+
+class _PlanPage extends StatefulWidget {
+  const _PlanPage();
+  @override
+  State<_PlanPage> createState() => _PlanPageState();
+}
+
+class _PlanPageState extends State<_PlanPage> {
+  String? _token;
+  String _currentPlan = 'free';
+  DateTime? _expiresAt;
+  bool _loading = true;
+  bool _saving = false;
+
+  static const _plans = [
+    _PlanInfo('free',     'Free',     '฿0 / เดือน',   Color(0xFF9E9E9E), ['รับออเดอร์', 'จัดการเมนู', 'สต็อก']),
+    _PlanInfo('silver',   'Silver',   '฿299 / เดือน', Color(0xFF78909C), ['ทุกอย่างใน Free', 'Rich Menu', 'รายงานยอดขาย']),
+    _PlanInfo('gold',     'Gold',     '฿599 / เดือน', Color(0xFFFFA000), ['ทุกอย่างใน Silver', '✅ ส่ง Flex Message', '✅ แจ้งเตือน LINE']),
+    _PlanInfo('platinum', 'Platinum', '฿999 / เดือน', Color(0xFF7B1FA2), ['ทุกอย่างใน Gold', '✅ Broadcast ไม่จำกัด', '✅ Priority Support']),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final token = await AuthStorage.getToken();
+    if (token == null) { setState(() => _loading = false); return; }
+    setState(() => _token = token);
+    try {
+      final res = await ApiService().getMerchantPlan(token);
+      final data = res['data'] as Map<String, dynamic>;
+      setState(() {
+        _currentPlan = data['plan'] as String? ?? 'free';
+        final exp = data['planExpiresAt'];
+        _expiresAt = exp != null ? DateTime.tryParse(exp.toString()) : null;
+        _loading = false;
+      });
+    } catch (_) {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _selectPlan(String plan) async {
+    if (_token == null || plan == _currentPlan) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('เปลี่ยนแพ็กเกจ'),
+        content: Text('ต้องการเปลี่ยนเป็นแพ็กเกจ ${_plans.firstWhere((p) => p.id == plan).name} ใช่ไหม?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('ยกเลิก')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('ยืนยัน')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    setState(() => _saving = true);
+    try {
+      await ApiService().updateMerchantPlan(_token!, plan);
+      await _load();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ เปลี่ยนแพ็กเกจแล้ว'), behavior: SnackBarBehavior.floating, backgroundColor: Color(0xFF34A853)),
+      );
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('เกิดข้อผิดพลาด'), behavior: SnackBarBehavior.floating, backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const _SubPage(title: 'แพ็กเกจ', child: Center(child: CircularProgressIndicator()));
+
+    final current = _plans.firstWhere((p) => p.id == _currentPlan, orElse: () => _plans.first);
+
+    return _SubPage(
+      title: 'แพ็กเกจ',
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // current plan banner
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: current.color.withOpacity(.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: current.color.withOpacity(.4)),
+          ),
+          child: Row(children: [
+            Icon(Icons.workspace_premium, color: current.color, size: 32),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('แพ็กเกจปัจจุบัน: ${current.name}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: current.color)),
+              if (_expiresAt != null)
+                Text('หมดอายุ: ${_expiresAt!.day}/${_expiresAt!.month}/${_expiresAt!.year}', style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
+            ])),
+          ]),
+        ),
+        const SizedBox(height: 20),
+
+        // flex notice
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFFFE082))),
+          child: const Row(children: [
+            Icon(Icons.info_outline, color: Color(0xFFFFA000), size: 16),
+            SizedBox(width: 8),
+            Expanded(child: Text('แพ็กเกจ Gold ขึ้นไปจะส่ง Flex Message แจ้งเตือนลูกค้าผ่าน LINE อัตโนมัติ', style: TextStyle(fontSize: 12, color: Color(0xFF795548)))),
+          ]),
+        ),
+        const SizedBox(height: 20),
+
+        // plan cards
+        ..._plans.map((plan) => _PlanCard(
+          plan: plan,
+          isActive: plan.id == _currentPlan,
+          saving: _saving,
+          onSelect: () => _selectPlan(plan.id),
+        )),
+      ]),
+    );
+  }
+}
+
+class _PlanInfo {
+  final String id;
+  final String name;
+  final String price;
+  final Color color;
+  final List<String> features;
+  const _PlanInfo(this.id, this.name, this.price, this.color, this.features);
+}
+
+class _PlanCard extends StatelessWidget {
+  final _PlanInfo plan;
+  final bool isActive;
+  final bool saving;
+  final VoidCallback onSelect;
+  const _PlanCard({required this.plan, required this.isActive, required this.saving, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isActive ? plan.color : const Color(0xFFE8EAED), width: isActive ? 2 : 1),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.workspace_premium, color: plan.color, size: 22),
+            const SizedBox(width: 8),
+            Text(plan.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: plan.color)),
+            const Spacer(),
+            Text(plan.price, style: const TextStyle(fontSize: 13, color: Color(0xFF5f6368))),
+          ]),
+          const SizedBox(height: 10),
+          ...plan.features.map((f) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(children: [
+              Icon(Icons.check_circle_outline, size: 14, color: plan.color),
+              const SizedBox(width: 6),
+              Text(f, style: const TextStyle(fontSize: 13, color: Color(0xFF5f6368))),
+            ]),
+          )),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: isActive
+                ? OutlinedButton(
+                    onPressed: null,
+                    style: OutlinedButton.styleFrom(side: BorderSide(color: plan.color), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                    child: Text('แพ็กเกจปัจจุบัน', style: TextStyle(color: plan.color)),
+                  )
+                : ElevatedButton(
+                    onPressed: saving ? null : onSelect,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: plan.color,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                    child: Text('เลือก ${plan.name}'),
+                  ),
+          ),
+        ]),
+      ),
+    );
+  }
 }
