@@ -503,9 +503,13 @@ class _PaymentPageState extends State<_PaymentPage> {
         qrImageBytes: _qrImageBytes,
         qrImageName: _qrImageName,
       );
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('บันทึกแล้ว'), behavior: SnackBarBehavior.floating));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ บันทึกแล้ว'), behavior: SnackBarBehavior.floating, backgroundColor: Color(0xFF34A853)),
+      );
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('เกิดข้อผิดพลาด'), behavior: SnackBarBehavior.floating));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('เกิดข้อผิดพลาด'), behavior: SnackBarBehavior.floating, backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -514,55 +518,212 @@ class _PaymentPageState extends State<_PaymentPage> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const _SubPage(title: 'วิธีชำระเงิน', child: Center(child: CircularProgressIndicator()));
+
+    final hasBank = _acceptBankTransfer || _acceptPromptPay;
+
     return _SubPage(
       title: 'วิธีชำระเงิน',
-      child: Column(children: [
-        _ToggleRow(label: '💵 เงินสด', value: _acceptCash, onChanged: (v) => setState(() => _acceptCash = v)),
-        _ToggleRow(label: '🏦 โอนธนาคาร', value: _acceptBankTransfer, onChanged: (v) => setState(() => _acceptBankTransfer = v)),
-        _ToggleRow(label: '⚡ พร้อมเพย์', value: _acceptPromptPay, onChanged: (v) => setState(() => _acceptPromptPay = v)),
-        _ToggleRow(label: '📱 QR Code', value: _acceptQrCode, onChanged: (v) => setState(() => _acceptQrCode = v)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // ── Accept methods card ──────────────────────────────────────────────
+        _CardSection(
+          title: 'รับชำระด้วย',
+          icon: Icons.payments_outlined,
+          child: Column(children: [
+            _PayToggle(
+              icon: Icons.money, iconColor: const Color(0xFF34A853),
+              label: 'เงินสด', sub: 'รับชำระที่เคาน์เตอร์',
+              value: _acceptCash, onChanged: (v) => setState(() => _acceptCash = v),
+            ),
+            _Divider(),
+            _PayToggle(
+              icon: Icons.account_balance, iconColor: const Color(0xFF1A73E8),
+              label: 'โอนธนาคาร', sub: 'โอนเงินผ่านธนาคาร',
+              value: _acceptBankTransfer, onChanged: (v) => setState(() => _acceptBankTransfer = v),
+            ),
+            _Divider(),
+            _PayToggle(
+              icon: Icons.bolt, iconColor: const Color(0xFFFF9800),
+              label: 'พร้อมเพย์', sub: 'PromptPay',
+              value: _acceptPromptPay, onChanged: (v) => setState(() => _acceptPromptPay = v),
+            ),
+            _Divider(),
+            _PayToggle(
+              icon: Icons.qr_code_2, iconColor: const Color(0xFF9C27B0),
+              label: 'QR Code', sub: 'สแกน QR ชำระเงิน',
+              value: _acceptQrCode, onChanged: (v) => setState(() => _acceptQrCode = v),
+            ),
+          ]),
+        ),
+
+        // ── QR image card ────────────────────────────────────────────────────
         if (_acceptQrCode) ...[
           const SizedBox(height: 16),
-          const Align(alignment: Alignment.centerLeft, child: Text('QR Code', style: TextStyle(fontSize: 12, color: Color(0xFF5f6368), fontWeight: FontWeight.w600))),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: _pickQr,
-            child: Container(
-              width: double.infinity, height: 180,
-              decoration: BoxDecoration(color: const Color(0xFFF1F3F4), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
-              child: _qrImageBytes != null
-                  ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(_qrImageBytes!, fit: BoxFit.contain))
-                  : _existingQrUrl != null
-                      ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(_existingQrUrl!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Color(0xFF9E9E9E))))
-                      : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(Icons.qr_code, size: 48, color: Color(0xFF9E9E9E)),
-                          SizedBox(height: 8),
-                          Text('แตะเพื่ออัปโหลด QR Code', style: TextStyle(color: Color(0xFF9E9E9E))),
-                        ]),
-            ),
+          _CardSection(
+            title: 'QR Code ชำระเงิน',
+            icon: Icons.qr_code_2,
+            child: Column(children: [
+              GestureDetector(
+                onTap: _pickQr,
+                child: Stack(alignment: Alignment.bottomRight, children: [
+                  Container(
+                    width: double.infinity, height: 200,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F9FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE8EAED)),
+                    ),
+                    child: _qrImageBytes != null
+                        ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(_qrImageBytes!, fit: BoxFit.contain))
+                        : _existingQrUrl != null
+                            ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(_existingQrUrl!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Color(0xFF9E9E9E), size: 48)))
+                            : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                Icon(Icons.add_photo_alternate_outlined, size: 48, color: Color(0xFFBDBDBD)),
+                                SizedBox(height: 8),
+                                Text('แตะเพื่ออัปโหลด QR Code', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 13)),
+                              ]),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
+                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.edit, color: Colors.white, size: 14),
+                        SizedBox(width: 4),
+                        Text('เปลี่ยน', style: TextStyle(color: Colors.white, fontSize: 12)),
+                      ]),
+                    ),
+                  ),
+                ]),
+              ),
+            ]),
           ),
         ],
-        if (_acceptBankTransfer || _acceptPromptPay) ...[
+
+        // ── Bank / PromptPay details card ────────────────────────────────────
+        if (hasBank) ...[
           const SizedBox(height: 16),
-          const Align(alignment: Alignment.centerLeft, child: Text('ข้อมูลบัญชี', style: TextStyle(fontSize: 12, color: Color(0xFF5f6368), fontWeight: FontWeight.w600))),
-          const SizedBox(height: 8),
-          if (_acceptBankTransfer) ...[
-            _Field(ctrl: _bankNameCtrl, label: 'ชื่อธนาคาร'),
-            const SizedBox(height: 10),
-            _Field(ctrl: _bankAccountCtrl, label: 'เลขบัญชี'),
-            const SizedBox(height: 10),
-            _Field(ctrl: _accountNameCtrl, label: 'ชื่อบัญชี'),
-          ],
-          if (_acceptPromptPay) ...[
-            const SizedBox(height: 10),
-            _Field(ctrl: _promptPayCtrl, label: 'เบอร์พร้อมเพย์'),
-          ],
+          _CardSection(
+            title: 'ข้อมูลบัญชี',
+            icon: Icons.account_balance_wallet_outlined,
+            child: Column(children: [
+              if (_acceptBankTransfer) ...[
+                _IconField(ctrl: _bankNameCtrl, label: 'ชื่อธนาคาร', icon: Icons.account_balance),
+                const SizedBox(height: 12),
+                _IconField(ctrl: _bankAccountCtrl, label: 'เลขบัญชี', icon: Icons.credit_card, keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                _IconField(ctrl: _accountNameCtrl, label: 'ชื่อบัญชี', icon: Icons.person_outline),
+              ],
+              if (_acceptPromptPay) ...[
+                if (_acceptBankTransfer) const SizedBox(height: 12),
+                _IconField(ctrl: _promptPayCtrl, label: 'เบอร์พร้อมเพย์', icon: Icons.bolt, keyboardType: TextInputType.phone),
+              ],
+            ]),
+          ),
         ],
-        const SizedBox(height: 20),
-        _SaveBtn(onPressed: _save, saving: _saving, label: 'บันทึก'),
+
+        const SizedBox(height: 24),
+        _SaveBtn(onPressed: _save, saving: _saving, label: 'บันทึกการตั้งค่า'),
+        const SizedBox(height: 8),
       ]),
     );
   }
+}
+
+// ─── Card section wrapper ─────────────────────────────────────────────────────
+
+class _CardSection extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+  const _CardSection({required this.title, required this.icon, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: Row(children: [
+            Icon(icon, size: 16, color: const Color(0xFF5f6368)),
+            const SizedBox(width: 6),
+            Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF5f6368), letterSpacing: .3)),
+          ]),
+        ),
+        const SizedBox(height: 10),
+        Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), child: child),
+      ]),
+    );
+  }
+}
+
+// ─── Payment method toggle row ────────────────────────────────────────────────
+
+class _PayToggle extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String sub;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _PayToggle({required this.icon, required this.iconColor, required this.label, required this.sub, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        Container(
+          width: 38, height: 38,
+          decoration: BoxDecoration(color: iconColor.withOpacity(.1), borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(sub, style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
+        ])),
+        Switch(value: value, onChanged: onChanged, activeColor: const Color(0xFF1A73E8)),
+      ]),
+    );
+  }
+}
+
+class _Divider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => const Divider(height: 1, color: Color(0xFFF1F3F4));
+}
+
+// ─── Icon-prefixed text field ─────────────────────────────────────────────────
+
+class _IconField extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String label;
+  final IconData icon;
+  final TextInputType? keyboardType;
+  const _IconField({required this.ctrl, required this.label, required this.icon, this.keyboardType});
+
+  @override
+  Widget build(BuildContext context) => TextField(
+    controller: ctrl,
+    keyboardType: keyboardType,
+    style: const TextStyle(fontSize: 15),
+    decoration: InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, size: 20, color: const Color(0xFF9E9E9E)),
+      filled: true, fillColor: const Color(0xFFF8F9FA),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE8EAED))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE8EAED))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1A73E8), width: 1.5)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    ),
+  );
 }
 
 // ─── Shared sub-page shell ────────────────────────────────────────────────────
