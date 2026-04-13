@@ -1,4 +1,8 @@
-import jwt from 'jsonwebtoken';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const jwt = require('jsonwebtoken') as {
+  sign: (payload: object, secret: string, options: object) => string;
+  verify: (token: string, secret: string) => unknown;
+};
 import { env } from './config/env';
 import type { JwtPayload } from './types';
 
