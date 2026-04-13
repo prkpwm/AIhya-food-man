@@ -118,19 +118,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // section: personal
                     _SectionLabel('ข้อมูลส่วนตัว'),
                     const SizedBox(height: 10),
-                    _AuthField(ctrl: _nameCtrl, label: 'ชื่อ-นามสกุล', icon: Icons.person_outline, error: _nameErr, onChanged: (_) => setState(() => _nameErr = null)),
+                    AuthField(ctrl: _nameCtrl, label: 'ชื่อ-นามสกุล', icon: Icons.person_outline, error: _nameErr, onChanged: (_) => setState(() => _nameErr = null)),
                     const SizedBox(height: 12),
-                    _AuthField(ctrl: _emailCtrl, label: 'อีเมล', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress, error: _emailErr, onChanged: (_) => setState(() => _emailErr = null)),
+                    AuthField(ctrl: _emailCtrl, label: 'อีเมล', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress, error: _emailErr, onChanged: (_) => setState(() => _emailErr = null)),
 
                     const SizedBox(height: 20),
                     _SectionLabel('ข้อมูลร้านอาหาร'),
                     const SizedBox(height: 10),
-                    _AuthField(ctrl: _shopCtrl, label: 'ชื่อร้าน', icon: Icons.storefront_outlined, error: _shopErr, onChanged: (_) => setState(() => _shopErr = null)),
+                    AuthField(ctrl: _shopCtrl, label: 'ชื่อร้าน', icon: Icons.storefront_outlined, error: _shopErr, onChanged: (_) => setState(() => _shopErr = null)),
 
                     const SizedBox(height: 20),
                     _SectionLabel('รหัสผ่าน'),
                     const SizedBox(height: 10),
-                    _AuthField(
+                    AuthField(
                       ctrl: _passCtrl, label: 'รหัสผ่าน', icon: Icons.lock_outline,
                       obscure: !_showPass, error: _passErr,
                       onChanged: (_) => setState(() => _passErr = null),
@@ -140,7 +140,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _AuthField(
+                    AuthField(
                       ctrl: _confirmCtrl, label: 'ยืนยันรหัสผ่าน', icon: Icons.lock_outline,
                       obscure: !_showConfirm, error: _confirmErr,
                       onChanged: (_) => setState(() => _confirmErr = null),
@@ -151,7 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
 
                     const SizedBox(height: 24),
-                    _PrimaryBtn(label: 'สมัครสมาชิก', loading: _loading, onPressed: _register, color: const Color(0xFF34A853)),
+                    PrimaryBtn(label: 'สมัครสมาชิก', loading: _loading, onPressed: _register, color: const Color(0xFF34A853)),
                   ]),
                 ),
               ),
