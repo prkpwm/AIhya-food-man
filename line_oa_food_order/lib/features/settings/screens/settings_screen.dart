@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:line_oa_food_order/core/services/api_service.dart';
 import 'package:line_oa_food_order/core/services/auth_storage.dart';
+import 'package:line_oa_food_order/features/auth/providers/auth_provider.dart';
 
 // ─── Main settings menu ───────────────────────────────────────────────────────
 
@@ -55,8 +57,8 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         );
                         if (confirm == true) {
-                          await AuthStorage.clear();
-                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ออกจากระบบแล้ว'), behavior: SnackBarBehavior.floating));
+                          await ref.read(authProvider.notifier).logout();
+                          if (context.mounted) context.go('/login');
                         }
                       } else {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => item.page!));

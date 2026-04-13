@@ -20,8 +20,8 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
     });
   }
 
-  void logout() {
-    ref.read(authServiceProvider).logout();
+  Future<void> logout() async {
+    await ref.read(authServiceProvider).logout();
     ref.read(currentUserProvider.notifier).state = null;
     state = const AsyncData(null);
   }
